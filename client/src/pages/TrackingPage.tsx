@@ -4,24 +4,10 @@ import { api } from '../services/api.js';
 import { StatusBadge } from '../components/ui/StatusBadge.js';
 import {
   Search,
-  CheckCircle2,
   Clock,
   AlertCircle,
-  FileText,
-  Warehouse,
-  ShoppingBag,
-  CreditCard,
-  PackageCheck,
-  Send,
   ArrowRight,
-  ExternalLink,
-  ChevronRight,
   Boxes,
-  Truck,
-  Building,
-  User,
-  ShieldCheck,
-  Calendar,
   Layers,
   History,
   RotateCcw
@@ -87,25 +73,6 @@ export const TrackingPage: React.FC = () => {
   const selectDocument = (num: string) => {
     setSearchQuery(num);
     fetchTracking(num);
-  };
-
-  const getStepIcon = (id: string) => {
-    switch (id) {
-      case 'STEP_PR':
-        return FileText;
-      case 'STEP_WAREHOUSE_CHECK':
-        return Warehouse;
-      case 'STEP_SOURCING':
-        return ShoppingBag;
-      case 'STEP_PO_APPROVAL':
-        return ShieldCheck;
-      case 'STEP_RECEIVING':
-        return Truck;
-      case 'STEP_HANDOVER':
-        return PackageCheck;
-      default:
-        return CheckCircle2;
-    }
   };
 
   return (
@@ -297,79 +264,6 @@ export const TrackingPage: React.FC = () => {
                   <p className="font-semibold text-slate-400 mt-1">Belum Terlaksana</p>
                 )}
               </div>
-            </div>
-          </div>
-
-          {/* Stepper Timeline (6 Lifecycle Stages) */}
-          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
-            <h2 className="text-sm font-black text-slate-900 uppercase tracking-wider mb-6 flex items-center gap-2">
-              <Clock className="w-4 h-4 text-indigo-600" />
-              Alur Tahapan Real-Time (Procurement Milestone)
-            </h2>
-
-            <div className="relative pl-6 sm:pl-8 border-l-2 border-slate-200 space-y-8 ml-3">
-              {trackingData.milestones.map((st: any) => {
-                const Icon = getStepIcon(st.id);
-                const isStepCompleted = st.status === 'COMPLETED';
-                const isStepActive = st.status === 'IN_PROGRESS';
-                const isStepSkipped = st.status === 'SKIPPED';
-
-                return (
-                  <div key={st.id} className="relative group">
-                    {/* Circle Node Icon */}
-                    <div
-                      className={`absolute -left-[37px] sm:-left-[45px] top-0.5 w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all ${
-                        isStepCompleted
-                          ? 'bg-emerald-600 border-emerald-600 text-white shadow-md shadow-emerald-200'
-                          : isStepActive
-                          ? 'bg-indigo-600 border-indigo-600 text-white animate-pulse shadow-md shadow-indigo-200'
-                          : isStepSkipped
-                          ? 'bg-slate-100 border-slate-300 text-slate-400'
-                          : 'bg-white border-slate-300 text-slate-400'
-                      }`}
-                    >
-                      <Icon className="w-4 h-4" />
-                    </div>
-
-                    <div className="bg-slate-50/70 group-hover:bg-slate-50 p-4 rounded-2xl border border-slate-200/80 transition">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                        <div className="flex items-center gap-2.5">
-                          <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
-                            Langkah {st.stepNumber}
-                          </span>
-                          <h3 className="text-xs sm:text-sm font-black text-slate-900">
-                            {st.title}
-                          </h3>
-                        </div>
-
-                        <div>
-                          <span
-                            className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
-                              isStepCompleted
-                                ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
-                                : isStepActive
-                                ? 'bg-indigo-100 text-indigo-800 border-indigo-200'
-                                : isStepSkipped
-                                ? 'bg-slate-100 text-slate-500 border-slate-200'
-                                : 'bg-slate-100 text-slate-600 border-slate-200'
-                            }`}
-                          >
-                            {st.status.replace(/_/g, ' ')}
-                          </span>
-                        </div>
-                      </div>
-
-                      <p className="text-xs text-slate-600 mt-1 font-medium">{st.subtitle}</p>
-
-                      {st.details && (
-                        <div className="mt-2.5 inline-block text-[11px] font-semibold text-slate-700 bg-white px-3 py-1 rounded-lg border border-slate-200">
-                          {st.details}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
             </div>
           </div>
 

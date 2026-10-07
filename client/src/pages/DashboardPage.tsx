@@ -136,7 +136,7 @@ export const DashboardPage: React.FC = () => {
             className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-sm transition"
           >
             <Clock className="w-3.5 h-3.5" />
-            Lacak Milestone Live
+            Lacak Status Alur
           </button>
           <button
             onClick={() => navigate('/purchase-requests')}
