@@ -5,6 +5,7 @@ import { authenticate, requireRole } from '../middleware/auth.js';
 import { generateDocumentNumber } from '../utils/documentNumber.js';
 import { AuditService } from '../services/auditService.js';
 import { NotificationService } from '../services/notificationService.js';
+import { computeItemLiveStatus, computePRItemStatusSummary } from '../utils/itemStatus.js';
 
 const router = Router();
 
@@ -39,6 +40,11 @@ router.get('/', authenticate, async (req: Request, res: Response, next: NextFunc
               },
             },
             unit: true,
+            poItems: {
+              include: {
+                purchaseOrder: { select: { id: true, poNumber: true, status: true } },
+              },
+            },
           },
         },
         quotations: { include: { supplier: true } },
@@ -47,7 +53,19 @@ router.get('/', authenticate, async (req: Request, res: Response, next: NextFunc
       orderBy: { createdAt: 'desc' },
     });
 
-    return res.json({ success: true, data: prs });
+    const enrichedPrs = prs.map((pr) => {
+      const itemsWithLive = (pr.items || []).map((it) => ({
+        ...it,
+        liveStatus: computeItemLiveStatus(it, pr.status),
+      }));
+      return {
+        ...pr,
+        items: itemsWithLive,
+        itemStatusSummary: computePRItemStatusSummary(itemsWithLive, pr.status),
+      };
+    });
+
+    return res.json({ success: true, data: enrichedPrs });
   } catch (error) {
     next(error);
   }
@@ -73,6 +91,11 @@ router.get('/:id', authenticate, async (req: Request, res: Response, next: NextF
               },
             },
             unit: true,
+            poItems: {
+              include: {
+                purchaseOrder: { select: { id: true, poNumber: true, status: true } },
+              },
+            },
           },
         },
         quotations: {
@@ -96,7 +119,18 @@ router.get('/:id', authenticate, async (req: Request, res: Response, next: NextF
       return res.status(404).json({ success: false, message: 'Permintaan barang tidak ditemukan' });
     }
 
-    return res.json({ success: true, data: pr });
+    const itemsWithLive = (pr.items || []).map((it) => ({
+      ...it,
+      liveStatus: computeItemLiveStatus(it, pr.status),
+    }));
+
+    const enrichedPr = {
+      ...pr,
+      items: itemsWithLive,
+      itemStatusSummary: computePRItemStatusSummary(itemsWithLive, pr.status),
+    };
+
+    return res.json({ success: true, data: enrichedPr });
   } catch (error) {
     next(error);
   }

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api.js';
 import { useAuth } from '../context/AuthContext.js';
 import { StatusBadge } from '../components/ui/StatusBadge.js';
+import { ItemStatusSummary, computeItemLiveStatus } from '../components/ui/ItemStatusSummary.js';
 import {
   ArrowLeft,
   Calendar,
@@ -27,19 +28,25 @@ export const PRDetailPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
 
-  const fetchPR = async () => {
+  const fetchPR = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const res = await api.get(`/purchase-requests/${id}`);
       setPr(res.data.data);
     } catch (e) {
       console.error('Failed to load PR detail', e);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchPR();
+    // Real-time polling every 6 seconds
+    const interval = setInterval(() => {
+      if (id) fetchPR(true);
+    }, 6000);
+    return () => clearInterval(interval);
   }, [id]);
 
   const handleSubmitDraft = async () => {
@@ -89,7 +96,11 @@ export const PRDetailPage: React.FC = () => {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-black text-slate-900 tracking-tight">{pr.prNumber}</h1>
-              <StatusBadge status={pr.status} />
+              <ItemStatusSummary
+                items={pr.items}
+                prStatus={pr.status}
+                summary={pr.itemStatusSummary}
+              />
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
               Diajukan pada {new Date(pr.requestDate).toLocaleDateString('id-ID', { dateStyle: 'full' })}
@@ -257,7 +268,30 @@ export const PRDetailPage: React.FC = () => {
                     {it.unit?.code || it.unit?.name}
                   </td>
                   <td className="px-4 py-3.5">
-                    <StatusBadge status={it.status} />
+                    {(() => {
+                      const live = it.liveStatus || computeItemLiveStatus(it, pr.status);
+                      return (
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${
+                            live.color === 'purple'
+                              ? 'bg-purple-100 text-purple-800 border-purple-200'
+                              : live.color === 'amber'
+                              ? 'bg-amber-100 text-amber-800 border-amber-200'
+                              : live.color === 'blue'
+                              ? 'bg-blue-100 text-blue-800 border-blue-200'
+                              : live.color === 'emerald'
+                              ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                              : live.color === 'cyan'
+                              ? 'bg-cyan-100 text-cyan-800 border-cyan-200'
+                              : live.color === 'teal'
+                              ? 'bg-teal-100 text-teal-800 border-teal-200'
+                              : 'bg-slate-100 text-slate-700 border-slate-200'
+                          }`}
+                        >
+                          {live.label}
+                        </span>
+                      );
+                    })()}
                   </td>
                 </tr>
               ))}

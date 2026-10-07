@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api.js';
 import { StatusBadge } from '../components/ui/StatusBadge.js';
+import { ItemStatusSummary } from '../components/ui/ItemStatusSummary.js';
 import { useAuth } from '../context/AuthContext.js';
 import { Plus, Search, Filter, FileText, ChevronRight, AlertCircle, Clock } from 'lucide-react';
 
@@ -15,8 +16,8 @@ export const PRListPage: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const fetchPrs = async () => {
-    setLoading(true);
+  const fetchPrs = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       let query = '';
       const params: string[] = [];
@@ -29,12 +30,20 @@ export const PRListPage: React.FC = () => {
     } catch (e) {
       console.error('Failed to load PRs', e);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchPrs();
+  }, [statusFilter, priorityFilter]);
+
+  // Real-time background auto polling every 6 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchPrs(true);
+    }, 6000);
+    return () => clearInterval(interval);
   }, [statusFilter, priorityFilter]);
 
   const filteredPrs = prs.filter((pr) => {
@@ -133,7 +142,7 @@ export const PRListPage: React.FC = () => {
                   <th className="px-4 py-3">Prioritas</th>
                   <th className="px-4 py-3">Keperluan</th>
                   <th className="px-4 py-3">Jumlah Item</th>
-                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3">Status Saat Ini</th>
                   <th className="px-4 py-3 text-right">Aksi</th>
                 </tr>
               </thead>
@@ -174,7 +183,11 @@ export const PRListPage: React.FC = () => {
                       {pr.items?.length || 0} item
                     </td>
                     <td className="px-4 py-3.5">
-                      <StatusBadge status={pr.status} />
+                      <ItemStatusSummary
+                        items={pr.items}
+                        prStatus={pr.status}
+                        summary={pr.itemStatusSummary}
+                      />
                     </td>
                     <td className="px-4 py-3.5 text-right">
                       <div className="flex items-center justify-end gap-1.5">

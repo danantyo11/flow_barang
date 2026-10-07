@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { prisma } from '../config/prisma.js';
 import { authenticate } from '../middleware/auth.js';
+import { computeItemLiveStatus, computePRItemStatusSummary } from '../utils/itemStatus.js';
 
 const router = Router();
 
@@ -32,6 +33,11 @@ router.get('/search', authenticate, async (req: Request, res: Response, next: Ne
           include: {
             item: { select: { id: true, itemCode: true, itemName: true } },
             unit: { select: { id: true, code: true, name: true } },
+            poItems: {
+              include: {
+                purchaseOrder: { select: { id: true, poNumber: true, status: true } },
+              },
+            },
           },
         },
         purchaseOrders: {
@@ -42,7 +48,19 @@ router.get('/search', authenticate, async (req: Request, res: Response, next: Ne
       take: 20,
     });
 
-    return res.json({ success: true, data: prs });
+    const enrichedPrs = prs.map((pr) => {
+      const itemsWithLive = (pr.items || []).map((it) => ({
+        ...it,
+        liveStatus: computeItemLiveStatus(it, pr.status),
+      }));
+      return {
+        ...pr,
+        items: itemsWithLive,
+        itemStatusSummary: computePRItemStatusSummary(itemsWithLive, pr.status),
+      };
+    });
+
+    return res.json({ success: true, data: enrichedPrs });
   } catch (error) {
     next(error);
   }
@@ -136,6 +154,11 @@ router.get('/:identifier', authenticate, async (req: Request, res: Response, nex
               },
             },
             unit: true,
+            poItems: {
+              include: {
+                purchaseOrder: { select: { id: true, poNumber: true, status: true } },
+              },
+            },
           },
         },
         quotations: {
@@ -361,10 +384,21 @@ router.get('/:identifier', authenticate, async (req: Request, res: Response, nex
       },
     ];
 
+    const itemsWithLive = (pr.items || []).map((it) => ({
+      ...it,
+      liveStatus: computeItemLiveStatus(it, pr.status),
+    }));
+
+    const enrichedPr = {
+      ...pr,
+      items: itemsWithLive,
+      itemStatusSummary: computePRItemStatusSummary(itemsWithLive, pr.status),
+    };
+
     return res.json({
       success: true,
       data: {
-        pr,
+        pr: enrichedPr,
         progressPercentage,
         isCompleted,
         isCancelled,

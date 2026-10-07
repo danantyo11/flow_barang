@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { api } from '../services/api.js';
 import { StatusBadge } from '../components/ui/StatusBadge.js';
+import { ItemStatusSummary, computeItemLiveStatus } from '../components/ui/ItemStatusSummary.js';
 import {
   Search,
   Clock,
@@ -63,6 +64,29 @@ export const TrackingPage: React.FC = () => {
       fetchTracking(initialQuery);
     }
   }, []);
+
+  // Real-time auto background refresh every 6 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      // Refresh list
+      api.get('/tracking/search')
+        .then((res) => {
+          if (res.data?.data) setRecentPRs(res.data.data);
+        })
+        .catch(() => {});
+
+      // Refresh currently selected document
+      if (activeTrackingNumber) {
+        api.get(`/tracking/${encodeURIComponent(activeTrackingNumber)}`)
+          .then((res) => {
+            if (res.data?.data) setTrackingData(res.data.data);
+          })
+          .catch(() => {});
+      }
+    }, 6000);
+
+    return () => clearInterval(interval);
+  }, [activeTrackingNumber]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -161,7 +185,11 @@ export const TrackingPage: React.FC = () => {
                   <span className="text-2xl font-black text-slate-900 tracking-tight">
                     {trackingData.pr?.prNumber}
                   </span>
-                  <StatusBadge status={trackingData.pr?.status} />
+                  <ItemStatusSummary
+                    items={trackingData.pr?.items}
+                    prStatus={trackingData.pr?.status}
+                    summary={trackingData.pr?.itemStatusSummary}
+                  />
                   <span
                     className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                       trackingData.pr?.priority === 'CRITICAL'
@@ -315,7 +343,30 @@ export const TrackingPage: React.FC = () => {
                         {it.unit?.code || it.unit?.name}
                       </td>
                       <td className="px-4 py-3.5">
-                        <StatusBadge status={it.status} />
+                        {(() => {
+                          const live = it.liveStatus || computeItemLiveStatus(it, trackingData.pr?.status);
+                          return (
+                            <span
+                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${
+                                live.color === 'purple'
+                                  ? 'bg-purple-100 text-purple-800 border-purple-200'
+                                  : live.color === 'amber'
+                                  ? 'bg-amber-100 text-amber-800 border-amber-200'
+                                  : live.color === 'blue'
+                                  ? 'bg-blue-100 text-blue-800 border-blue-200'
+                                  : live.color === 'emerald'
+                                  ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                                  : live.color === 'cyan'
+                                  ? 'bg-cyan-100 text-cyan-800 border-cyan-200'
+                                  : live.color === 'teal'
+                                  ? 'bg-teal-100 text-teal-800 border-teal-200'
+                                  : 'bg-slate-100 text-slate-700 border-slate-200'
+                              }`}
+                            >
+                              {live.label}
+                            </span>
+                          );
+                        })()}
                       </td>
                     </tr>
                   ))}
@@ -393,7 +444,11 @@ export const TrackingPage: React.FC = () => {
                       {pr.purpose || '-'}
                     </td>
                     <td className="px-4 py-3.5">
-                      <StatusBadge status={pr.status} />
+                      <ItemStatusSummary
+                        items={pr.items}
+                        prStatus={pr.status}
+                        summary={pr.itemStatusSummary}
+                      />
                     </td>
                     <td className="px-4 py-3.5 text-right">
                       <button
