@@ -45,6 +45,95 @@ router.get('/', authenticate, async (req: Request, res: Response, next: NextFunc
   }
 });
 
+// GET /api/purchase-orders/pending-items - Get all candidate PR items waiting to be ordered in a PO
+router.get('/pending-items', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    // 1. Fetch all PR items that need purchasing and are not already completed or cancelled
+    const prItems = await prisma.purchaseRequestItem.findMany({
+      where: {
+        purchaseQty: { gt: 0 },
+        purchaseRequest: {
+          status: { notIn: ['DRAFT', 'CANCELLED', 'REJECTED'] },
+        },
+        // We only want items that haven't been fully included in an active (non-cancelled) PO
+        poItems: {
+          none: {
+            purchaseOrder: {
+              status: { notIn: ['CANCELLED', 'REJECTED'] },
+            },
+          },
+        },
+      },
+      include: {
+        item: {
+          include: {
+            unit: true,
+            category: true,
+          },
+        },
+        unit: true,
+        purchaseRequest: {
+          include: {
+            requester: { select: { id: true, name: true, employeeNumber: true } },
+            department: true,
+            quotations: {
+              include: {
+                supplier: true,
+                items: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: [
+        { purchaseRequest: { priority: 'asc' } },
+        { purchaseRequest: { createdAt: 'desc' } },
+      ],
+    });
+
+    // 2. Format items with recommended vendor / quotation price if available
+    const formatted = prItems.map((pi) => {
+      const pr = pi.purchaseRequest;
+      // Check if there is an approved or selected quotation for this PR & item
+      const winningQuot = pr.quotations.find((q) => q.isSelected);
+      const quotItem = (winningQuot || pr.quotations[0])?.items?.find(
+        (qi) => qi.prItemId === pi.id || qi.itemId === pi.itemId
+      );
+
+      return {
+        id: pi.id,
+        prId: pr.id,
+        prNumber: pr.prNumber,
+        requestDate: pr.requestDate,
+        requiredDate: pr.requiredDate,
+        priority: pr.priority,
+        purpose: pr.purpose,
+        requesterName: pr.requester?.name,
+        departmentName: pr.department?.departmentName,
+        itemId: pi.itemId,
+        itemCode: pi.item?.itemCode,
+        itemName: pi.item?.itemName,
+        specification: pi.specification || pi.item?.specification || '',
+        categoryName: pi.item?.category?.name,
+        requestedQty: pi.requestedQty,
+        availableStock: pi.availableStock,
+        allocatedQty: pi.allocatedQty,
+        purchaseQty: pi.purchaseQty,
+        unitId: pi.unitId,
+        unitCode: pi.unit?.code || pi.unit?.name,
+        estimatedPrice: pi.estimatedPrice || 0,
+        suggestedSupplierId: winningQuot?.supplierId || (pr.quotations[0]?.supplierId ?? null),
+        suggestedSupplierName: winningQuot?.supplier?.supplierName || (pr.quotations[0]?.supplier?.supplierName ?? null),
+        suggestedPrice: quotItem ? quotItem.unitPrice : pi.estimatedPrice || 0,
+      };
+    });
+
+    return res.json({ success: true, count: formatted.length, data: formatted });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // GET /api/purchase-orders/:id
 router.get('/:id', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -202,7 +291,40 @@ router.post(
         include: { items: true, supplier: true },
       });
 
-      if (data.prId) {
+      // Update PR items status and parent PR status
+      const linkedPrItemIds = data.items.map((it) => it.prItemId).filter(Boolean) as string[];
+      if (linkedPrItemIds.length > 0) {
+        await prisma.purchaseRequestItem.updateMany({
+          where: { id: { in: linkedPrItemIds } },
+          data: { status: 'ORDERED' },
+        });
+
+        // Determine all affected PRs
+        const affectedPrIds = new Set<string>();
+        if (data.prId) affectedPrIds.add(data.prId);
+
+        const itemsWithPr = await prisma.purchaseRequestItem.findMany({
+          where: { id: { in: linkedPrItemIds } },
+          select: { prId: true },
+        });
+        itemsWithPr.forEach((i) => affectedPrIds.add(i.prId));
+
+        for (const prIdToUpdate of affectedPrIds) {
+          // Check if all purchase items in this PR now have active POs
+          const remainingUnordered = await prisma.purchaseRequestItem.count({
+            where: {
+              prId: prIdToUpdate,
+              purchaseQty: { gt: 0 },
+              status: { notIn: ['ORDERED', 'COMPLETED'] },
+            },
+          });
+
+          await prisma.purchaseRequest.update({
+            where: { id: prIdToUpdate },
+            data: { status: remainingUnordered === 0 ? 'WAITING_APPROVAL' : 'WAITING_PO' },
+          });
+        }
+      } else if (data.prId) {
         await prisma.purchaseRequest.update({
           where: { id: data.prId },
           data: { status: 'WAITING_PO' },
@@ -333,6 +455,79 @@ router.post(
       });
 
       return res.json({ success: true, message: 'PO berhasil ditandai telah dikirim ke supplier', data: updated });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// DELETE /api/purchase-orders/:id - Cancel/Delete PO and release items back to candidate pool
+router.delete(
+  '/:id',
+  authenticate,
+  requireRole(['ADMIN', 'PURCHASING']),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = req.user!;
+      const po = await prisma.purchaseOrder.findUnique({
+        where: { id: req.params.id as string },
+        include: { items: true, goodsReceipts: true },
+      });
+
+      if (!po) return res.status(404).json({ success: false, message: 'PO tidak ditemukan' });
+
+      // If PO already has goods receipts, it cannot be deleted
+      if (po.goodsReceipts.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'PO tidak dapat dihapus karena sudah memiliki penerimaan barang (Goods Receipt).',
+        });
+      }
+
+      // Collect linked PR item IDs
+      const prItemIds = po.items.map((it) => it.prItemId).filter(Boolean) as string[];
+
+      // Delete PO (cascades to PO items)
+      await prisma.purchaseOrder.delete({
+        where: { id: po.id },
+      });
+
+      // Restore PR items status back to PURCHASING so they reappear in the PO creation candidate list
+      if (prItemIds.length > 0) {
+        await prisma.purchaseRequestItem.updateMany({
+          where: { id: { in: prItemIds } },
+          data: { status: 'PURCHASING' },
+        });
+
+        // Update affected PRs status back to WAITING_PRICE / PROCUREMENT if needed
+        const itemsWithPr = await prisma.purchaseRequestItem.findMany({
+          where: { id: { in: prItemIds } },
+          select: { prId: true },
+        });
+        const prIds = Array.from(new Set(itemsWithPr.map((i) => i.prId)));
+
+        for (const prId of prIds) {
+          await prisma.purchaseRequest.update({
+            where: { id: prId },
+            data: { status: 'WAITING_PRICE' },
+          });
+        }
+      }
+
+      await AuditService.log(prisma, {
+        userId: user.id,
+        userName: user.name,
+        action: 'DELETE_PO',
+        module: 'PO',
+        documentNumber: po.poNumber,
+        oldValue: { poNumber: po.poNumber, totalAmount: po.totalAmount },
+        ipAddress: req.ip,
+      });
+
+      return res.json({
+        success: true,
+        message: `PO ${po.poNumber} berhasil dihapus. Item barang telah dikembalikan ke daftar siap PO.`,
+      });
     } catch (error) {
       next(error);
     }
