@@ -194,6 +194,7 @@ router.get('/:id', authenticate, async (req: Request, res: Response, next: NextF
 
 const poItemSchema = z.object({
   prItemId: z.string().optional().nullable(),
+  prItemIds: z.array(z.string()).optional(),
   itemId: z.string().min(1),
   specification: z.string().optional().nullable(),
   quantity: z.number().min(0.01),
@@ -230,7 +231,53 @@ router.post(
       let calculatedDiscountTotal = 0;
       let calculatedTaxTotal = 0;
 
-      const preparedItems = data.items.map((item) => {
+      const preparedItems = data.items.flatMap((item) => {
+        // If this item was consolidated from multiple PR items
+        if (item.prItemIds && item.prItemIds.length > 1) {
+          // Create records or assign first prItemId to main record
+          const lineGross = item.quantity * item.unitPrice;
+          const lineDiscount = lineGross * ((item.discount || 0) / 100);
+          const lineNet = lineGross - lineDiscount;
+          const lineTax = lineNet * ((item.taxPercent || 0) / 100);
+          const lineSubtotal = lineNet + lineTax;
+
+          calculatedSubtotal += lineGross;
+          calculatedDiscountTotal += lineDiscount;
+          calculatedTaxTotal += lineTax;
+
+          // Create primary PO item with primary prItemId
+          const primary = {
+            prItemId: item.prItemIds[0],
+            itemId: item.itemId,
+            specification: item.specification,
+            quantity: item.quantity,
+            unitId: item.unitId,
+            unitPrice: item.unitPrice,
+            discount: item.discount,
+            taxPercent: item.taxPercent,
+            subtotal: lineSubtotal,
+            receivedQty: 0,
+            remainingQty: item.quantity,
+          };
+
+          // Also create tracking links for the other consolidated prItemIds with 0 qty/subtotal so Prisma relations bind them
+          const secondaries = item.prItemIds.slice(1).map((secId: string) => ({
+            prItemId: secId,
+            itemId: item.itemId,
+            specification: item.specification ? `${item.specification} (Konsolidasi item PR)` : '(Konsolidasi item PR)',
+            quantity: 0,
+            unitId: item.unitId,
+            unitPrice: 0,
+            discount: 0,
+            taxPercent: 0,
+            subtotal: 0,
+            receivedQty: 0,
+            remainingQty: 0,
+          }));
+
+          return [primary, ...secondaries];
+        }
+
         const lineGross = item.quantity * item.unitPrice;
         const lineDiscount = lineGross * ((item.discount || 0) / 100);
         const lineNet = lineGross - lineDiscount;
@@ -241,8 +288,8 @@ router.post(
         calculatedDiscountTotal += lineDiscount;
         calculatedTaxTotal += lineTax;
 
-        return {
-          prItemId: item.prItemId,
+        return [{
+          prItemId: (item.prItemIds && item.prItemIds[0]) || item.prItemId || null,
           itemId: item.itemId,
           specification: item.specification,
           quantity: item.quantity,
@@ -253,7 +300,7 @@ router.post(
           subtotal: lineSubtotal,
           receivedQty: 0,
           remainingQty: item.quantity,
-        };
+        }];
       });
 
       const totalAmount = calculatedSubtotal - calculatedDiscountTotal + calculatedTaxTotal;
@@ -292,7 +339,10 @@ router.post(
       });
 
       // Update PR items status and parent PR status
-      const linkedPrItemIds = data.items.map((it) => it.prItemId).filter(Boolean) as string[];
+      const linkedPrItemIds = data.items
+        .flatMap((it) => (it.prItemIds && it.prItemIds.length > 0 ? it.prItemIds : [it.prItemId]))
+        .filter(Boolean) as string[];
+
       if (linkedPrItemIds.length > 0) {
         await prisma.purchaseRequestItem.updateMany({
           where: { id: { in: linkedPrItemIds } },

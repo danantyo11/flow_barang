@@ -87,26 +87,47 @@ export const POCreatePage: React.FC = () => {
     loadInitialData();
   }, []);
 
-  // Synchronize checked PR items into PO items rows
+  // Synchronize checked PR items into PO items rows, grouping identical items by itemId
   const syncCheckedToPOItems = (allCandidates: any[], checkedIds: string[], targetSupplierId?: string) => {
-    const selected = allCandidates
-      .filter((c) => checkedIds.includes(c.id))
-      .map((c) => ({
-        prItemId: c.id,
-        prNumber: c.prNumber,
-        itemId: c.itemId,
-        itemName: c.itemName,
-        itemCode: c.itemCode,
-        specification: c.specification,
-        quantity: c.purchaseQty,
-        unitId: c.unitId,
-        unitCode: c.unitCode,
-        unitPrice: c.suggestedPrice || c.estimatedPrice || 0,
-        discount: 0,
-        taxPercent: 0,
-      }));
+    const selectedCandidates = allCandidates.filter((c) => checkedIds.includes(c.id));
 
-    setItems(selected);
+    // Group by itemId to consolidate duplicates into a single PO line with summed quantity
+    const itemMap = new Map<string, any>();
+
+    selectedCandidates.forEach((c) => {
+      const key = c.itemId;
+      if (!itemMap.has(key)) {
+        itemMap.set(key, {
+          prItemId: c.id, // Primary or first PR item id
+          prItemIds: [c.id], // All consolidated PR item IDs
+          prNumbers: [c.prNumber],
+          itemId: c.itemId,
+          itemName: c.itemName,
+          itemCode: c.itemCode,
+          specification: c.specification,
+          quantity: Number(c.purchaseQty || 0),
+          unitId: c.unitId,
+          unitCode: c.unitCode,
+          unitPrice: c.suggestedPrice || c.estimatedPrice || 0,
+          discount: 0,
+          taxPercent: 0,
+          sourceBreakdown: [{ prNumber: c.prNumber, qty: c.purchaseQty }],
+        });
+      } else {
+        const existing = itemMap.get(key);
+        existing.quantity += Number(c.purchaseQty || 0);
+        if (!existing.prItemIds.includes(c.id)) {
+          existing.prItemIds.push(c.id);
+        }
+        if (!existing.prNumbers.includes(c.prNumber)) {
+          existing.prNumbers.push(c.prNumber);
+        }
+        existing.sourceBreakdown.push({ prNumber: c.prNumber, qty: c.purchaseQty });
+      }
+    });
+
+    const consolidatedItems = Array.from(itemMap.values());
+    setItems(consolidatedItems);
 
     // If auto-detecting vendor from selected items
     if (!targetSupplierId && !selectedSupplierId) {
@@ -193,7 +214,9 @@ export const POCreatePage: React.FC = () => {
 
   const removeItemRow = (index: number) => {
     const target = items[index];
-    if (target?.prItemId) {
+    if (target?.prItemIds && target.prItemIds.length > 0) {
+      setSelectedPrItemIds(selectedPrItemIds.filter((id) => !target.prItemIds.includes(id)));
+    } else if (target?.prItemId) {
       setSelectedPrItemIds(selectedPrItemIds.filter((id) => id !== target.prItemId));
     }
     setItems(items.filter((_, i) => i !== index));
@@ -263,6 +286,7 @@ export const POCreatePage: React.FC = () => {
         purchaseType: 'VENDOR',
         items: items.map((it) => ({
           prItemId: it.prItemId || null,
+          prItemIds: it.prItemIds || (it.prItemId ? [it.prItemId] : []),
           itemId: it.itemId,
           specification: it.specification,
           quantity: Number(it.quantity),
@@ -611,7 +635,22 @@ export const POCreatePage: React.FC = () => {
                     return (
                       <tr key={idx} className="hover:bg-slate-50/50">
                         <td className="px-3 py-2 font-mono text-[11px] font-bold text-indigo-700">
-                          {row.prNumber || '-'}
+                          {row.prNumbers && row.prNumbers.length > 0 ? (
+                            <div className="flex flex-col gap-0.5">
+                              {row.prNumbers.map((pNum: string) => (
+                                <span key={pNum} className="inline-block px-1.5 py-0.5 bg-indigo-50 text-indigo-800 rounded text-[10px]">
+                                  {pNum}
+                                </span>
+                              ))}
+                              {row.sourceBreakdown && row.sourceBreakdown.length > 1 && (
+                                <span className="text-[9px] text-emerald-700 font-sans font-bold">
+                                  ({row.sourceBreakdown.map((b: any) => `${b.prNumber}: ${b.qty}`).join(' + ')})
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            row.prNumber || '-'
+                          )}
                         </td>
                         <td className="px-3 py-2">
                           <select
