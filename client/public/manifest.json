@@ -1,0 +1,21 @@
+{
+  "short_name": "GoldenProcure",
+  "name": "GOLDEN PROCUREMENT & WAREHOUSE SYSTEM",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#ffffff",
+  "theme_color": "#b8861b",
+  "display": "standalone",
+  "orientation": "portrait-primary"
+}

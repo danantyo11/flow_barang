@@ -1,0 +1,735 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ==========================================
+// 1. RBAC & USER MANAGEMENT
+// ==========================================
+
+model User {
+  id              String         @id @default(uuid())
+  employeeNumber  String         @unique @map("employee_number")
+  name            String
+  email           String         @unique
+  password        String
+  phone           String?
+  departmentId    String?        @map("department_id")
+  position        String?
+  roleId          String         @map("role_id")
+  status          String         @default("ACTIVE") // ACTIVE, INACTIVE
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+
+  department      Department?    @relation(fields: [departmentId], references: [id])
+  role            Role           @relation(fields: [roleId], references: [id])
+  purchaseRequests PurchaseRequest[]
+  goodsIssues     GoodsIssue[]
+  handovers       HandoverDocument[]
+  approvalLogs    ApprovalLog[]
+  auditLogs       AuditLog[]
+  notifications   Notification[]
+
+  @@map("users")
+}
+
+model Role {
+  id          String         @id @default(uuid())
+  name        String         @unique // ADMIN, REQUESTER, WAREHOUSE, PURCHASING, APPROVER, MANAGEMENT
+  description String?
+  createdAt   DateTime       @default(now()) @map("created_at")
+  users       User[]
+  permissions RolePermission[]
+  approvalSteps ApprovalStep[]
+  notifications Notification[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String         @id @default(uuid())
+  name        String         @unique // e.g., pr:create, pr:approve, stock:check
+  module      String
+  action      String
+  description String?
+  roles       RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  id           String     @id @default(uuid())
+  roleId       String     @map("role_id")
+  permissionId String     @map("permission_id")
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model Department {
+  id             String            @id @default(uuid())
+  departmentCode String            @unique @map("department_code")
+  departmentName String            @map("department_name")
+  managerName    String?           @map("manager_name")
+  status         String            @default("ACTIVE")
+  createdAt      DateTime          @default(now()) @map("created_at")
+  users          User[]
+  purchaseRequests PurchaseRequest[]
+  goodsIssues    GoodsIssue[]
+  handovers      HandoverDocument[]
+
+  @@map("departments")
+}
+
+// ==========================================
+// 2. MASTER BARANG & INVENTORY
+// ==========================================
+
+model ItemCategory {
+  id          String            @id @default(uuid())
+  code        String            @unique
+  name        String
+  description String?
+  subcategories ItemSubcategory[]
+  items       Item[]
+
+  @@map("item_categories")
+}
+
+model ItemSubcategory {
+  id          String       @id @default(uuid())
+  categoryId  String       @map("category_id")
+  name        String
+  description String?
+  category    ItemCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  items       Item[]
+
+  @@map("item_subcategories")
+}
+
+model Unit {
+  id    String @id @default(uuid())
+  code  String @unique
+  name  String
+  items Item[]
+  prItems PurchaseRequestItem[]
+  poItems PurchaseOrderItem[]
+  giItems GoodsIssueItem[]
+  hoItems HandoverItem[]
+  dpItems DirectPurchaseItem[]
+
+  @@map("units")
+}
+
+model Item {
+  id               String            @id @default(uuid())
+  itemCode         String            @unique @map("item_code") // e.g. MAT-00125
+  itemName         String            @map("item_name")
+  categoryId       String            @map("category_id")
+  subcategoryId    String?           @map("subcategory_id")
+  unitId           String            @map("unit_id")
+  specification    String?
+  brand            String?
+  minimumStock     Float             @default(0) @map("minimum_stock")
+  maximumStock     Float             @default(0) @map("maximum_stock")
+  reorderPoint     Float             @default(0) @map("reorder_point")
+  criticalStock    Float             @default(0) @map("critical_stock")
+  isCritical       Boolean           @default(false) @map("is_critical")
+  defaultWarehouseId String?         @map("default_warehouse_id")
+  isActive         Boolean           @default(true) @map("is_active")
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+
+  category         ItemCategory      @relation(fields: [categoryId], references: [id])
+  subcategory      ItemSubcategory?  @relation(fields: [subcategoryId], references: [id])
+  unit             Unit              @relation(fields: [unitId], references: [id])
+  defaultWarehouse Warehouse?        @relation(fields: [defaultWarehouseId], references: [id])
+  
+  stockBalances    StockBalance[]
+  stockTransactions StockTransaction[]
+  prItems          PurchaseRequestItem[]
+  quotationItems   SupplierQuotationItem[]
+  poItems          PurchaseOrderItem[]
+  grItems          GoodsReceiptItem[]
+  giItems          GoodsIssueItem[]
+  hoItems          HandoverItem[]
+  dpItems          DirectPurchaseItem[]
+
+  @@map("items")
+}
+
+model Warehouse {
+  id            String              @id @default(uuid())
+  warehouseCode String              @unique @map("warehouse_code") // e.g. WH-01
+  warehouseName String              @map("warehouse_name")
+  address       String?
+  status        String              @default("ACTIVE")
+  createdAt     DateTime            @default(now()) @map("created_at")
+
+  locations     WarehouseLocation[]
+  items         Item[]
+  stockBalances StockBalance[]
+  stockTransactions StockTransaction[]
+  goodsReceiptItems GoodsReceiptItem[]
+  goodsIssues   GoodsIssue[]
+
+  @@map("warehouses")
+}
+
+model WarehouseLocation {
+  id           String         @id @default(uuid())
+  warehouseId  String         @map("warehouse_id")
+  locationName String         @map("location_name") // e.g. Rack A
+  rack         String?
+  bin          String?        // e.g. Bin A-01
+  status       String         @default("ACTIVE")
+  
+  warehouse    Warehouse      @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  stockBalances StockBalance[]
+  stockTransactions StockTransaction[]
+  goodsReceiptItems GoodsReceiptItem[]
+  goodsIssueItems GoodsIssueItem[]
+
+  @@map("warehouse_locations")
+}
+
+// ==========================================
+// 3. SUPPLIER & SOURCING
+// ==========================================
+
+model Supplier {
+  id           String              @id @default(uuid())
+  supplierCode String              @unique @map("supplier_code")
+  supplierName String              @map("supplier_name")
+  address      String?
+  contactPerson String?            @map("contact_person")
+  phone        String?
+  email        String?
+  taxNumber    String?             @map("tax_number")
+  paymentTerms String?             @map("payment_terms")
+  leadTimeDays Int                 @default(0) @map("lead_time_days")
+  status       String              @default("ACTIVE")
+  createdAt    DateTime            @default(now()) @map("created_at")
+
+  quotations   SupplierQuotation[]
+  purchaseOrders PurchaseOrder[]
+  goodsReceipts GoodsReceipt[]
+
+  @@map("suppliers")
+}
+
+model SupplierQuotation {
+  id              String                 @id @default(uuid())
+  quotationNumber String                 @unique @map("quotation_number")
+  prId            String?                @map("pr_id")
+  supplierId      String                 @map("supplier_id")
+  quotationDate   DateTime               @default(now()) @map("quotation_date")
+  validityDate    DateTime?              @map("validity_date")
+  leadTimeDays    Int                    @default(0) @map("lead_time_days")
+  paymentTerms    String?                @map("payment_terms")
+  shippingCost    Float                  @default(0) @map("shipping_cost")
+  taxPercent      Float                  @default(0) @map("tax_percent")
+  totalAmount     Float                  @default(0) @map("total_amount")
+  isSelected      Boolean                @default(false) @map("is_selected")
+  selectionReason String?                @map("selection_reason")
+  notes           String?
+  createdAt       DateTime               @default(now()) @map("created_at")
+
+  supplier        Supplier               @relation(fields: [supplierId], references: [id])
+  purchaseRequest PurchaseRequest?       @relation(fields: [prId], references: [id])
+  items           SupplierQuotationItem[]
+
+  @@map("supplier_quotations")
+}
+
+model SupplierQuotationItem {
+  id           String            @id @default(uuid())
+  quotationId  String            @map("quotation_id")
+  prItemId     String?           @map("pr_item_id")
+  itemId       String            @map("item_id")
+  unitPrice    Float             @map("unit_price")
+  discount     Float             @default(0)
+  taxPercent   Float             @default(0) @map("tax_percent")
+  subtotal     Float             @default(0)
+  leadTimeDays Int               @default(0) @map("lead_time_days")
+  notes        String?
+
+  quotation    SupplierQuotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  prItem       PurchaseRequestItem? @relation(fields: [prItemId], references: [id])
+  item         Item              @relation(fields: [itemId], references: [id])
+
+  @@map("supplier_quotation_items")
+}
+
+// ==========================================
+// 4. PURCHASE REQUEST (PR)
+// ==========================================
+
+model PurchaseRequest {
+  id           String                @id @default(uuid())
+  prNumber     String                @unique @map("pr_number") // PR-YYYYMM-XXXX
+  requestDate  DateTime              @default(now()) @map("request_date")
+  requesterId  String                @map("requester_id")
+  departmentId String                @map("department_id")
+  requiredDate DateTime?             @map("required_date")
+  priority     String                @default("NORMAL") // NORMAL, URGENT, CRITICAL
+  purpose      String?
+  notes        String?
+  status       String                @default("DRAFT") // DRAFT, SUBMITTED, WAREHOUSE_CHECK, PARTIAL_STOCK, PROCUREMENT, WAITING_PRICE, WAITING_PO, WAITING_APPROVAL, APPROVED, REJECTED, ORDERED, PARTIALLY_RECEIVED, RECEIVED, WAITING_HANDOVER, COMPLETED, CANCELLED
+  createdAt    DateTime              @default(now()) @map("created_at")
+  updatedAt    DateTime              @updatedAt @map("updated_at")
+
+  requester    User                  @relation(fields: [requesterId], references: [id])
+  department   Department            @relation(fields: [departmentId], references: [id])
+  items        PurchaseRequestItem[]
+  quotations   SupplierQuotation[]
+  purchaseOrders PurchaseOrder[]
+  goodsIssues  GoodsIssue[]
+  handovers    HandoverDocument[]
+  directPurchases DirectPurchase[]
+
+  @@map("purchase_requests")
+}
+
+model PurchaseRequestItem {
+  id             String                @id @default(uuid())
+  prId           String                @map("pr_id")
+  itemId         String                @map("item_id")
+  specification  String?
+  requestedQty   Float                 @map("requested_qty")
+  unitId         String                @map("unit_id")
+  estimatedPrice Float                 @default(0) @map("estimated_price")
+  
+  // Warehouse check fields
+  availableStock Float                 @default(0) @map("available_stock")
+  allocatedQty   Float                 @default(0) @map("allocated_qty")
+  purchaseQty    Float                 @default(0) @map("purchase_qty")
+  
+  status         String                @default("PENDING") // PENDING, ALLOCATED, PURCHASING, COMPLETED
+  notes          String?
+
+  purchaseRequest PurchaseRequest      @relation(fields: [prId], references: [id], onDelete: Cascade)
+  item           Item                  @relation(fields: [itemId], references: [id])
+  unit           Unit                  @relation(fields: [unitId], references: [id])
+  poItems        PurchaseOrderItem[]
+  quotationItems SupplierQuotationItem[]
+
+  @@map("purchase_request_items")
+}
+
+// ==========================================
+// 5. PURCHASE ORDER (PO) & APPROVAL
+// ==========================================
+
+model PurchaseOrder {
+  id            String              @id @default(uuid())
+  poNumber      String              @unique @map("po_number") // PO-YYYYMM-XXXX
+  prId          String?             @map("pr_id")
+  supplierId    String              @map("supplier_id")
+  poDate        DateTime            @default(now()) @map("po_date")
+  deliveryDate  DateTime?           @map("delivery_date")
+  paymentTerms  String?             @map("payment_terms")
+  shippingTerms String?             @map("shipping_terms")
+  currency      String              @default("IDR")
+  subtotal      Float               @default(0)
+  discount      Float               @default(0)
+  taxAmount     Float               @default(0) @map("tax_amount")
+  totalAmount   Float               @default(0) @map("total_amount")
+  notes         String?
+  status        String              @default("DRAFT") // DRAFT, WAITING_APPROVAL, APPROVED, REJECTED, SENT, PARTIALLY_RECEIVED, FULLY_RECEIVED, CLOSED, CANCELLED
+  purchaseType  String              @default("VENDOR") // VENDOR, DIRECT
+  createdBy     String?             @map("created_by")
+  approvedBy    String?             @map("approved_by")
+  approvedAt    DateTime?           @map("approved_at")
+  createdAt     DateTime            @default(now()) @map("created_at")
+  updatedAt     DateTime            @updatedAt @map("updated_at")
+
+  purchaseRequest PurchaseRequest?  @relation(fields: [prId], references: [id])
+  supplier      Supplier            @relation(fields: [supplierId], references: [id])
+  items         PurchaseOrderItem[]
+  goodsReceipts GoodsReceipt[]
+
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderItem {
+  id            String              @id @default(uuid())
+  poId          String              @map("po_id")
+  prItemId      String?             @map("pr_item_id")
+  itemId        String              @map("item_id")
+  specification String?
+  quantity      Float
+  unitId        String              @map("unit_id")
+  unitPrice     Float               @map("unit_price")
+  discount      Float               @default(0)
+  taxPercent    Float               @default(0) @map("tax_percent")
+  subtotal      Float               @default(0)
+  receivedQty   Float               @default(0) @map("received_qty")
+  remainingQty  Float               @default(0) @map("remaining_qty")
+
+  purchaseOrder PurchaseOrder       @relation(fields: [poId], references: [id], onDelete: Cascade)
+  prItem        PurchaseRequestItem? @relation(fields: [prItemId], references: [id])
+  item          Item                @relation(fields: [itemId], references: [id])
+  unit          Unit                @relation(fields: [unitId], references: [id])
+  grItems       GoodsReceiptItem[]
+
+  @@map("purchase_order_items")
+}
+
+// Configurable Approval Engine
+model ApprovalFlow {
+  id          String         @id @default(uuid())
+  name        String
+  minAmount   Float          @default(0) @map("min_amount")
+  maxAmount   Float?         @map("max_amount") // null = infinity
+  isActive    Boolean        @default(true) @map("is_active")
+  description String?
+  steps       ApprovalStep[]
+
+  @@map("approval_flows")
+}
+
+model ApprovalStep {
+  id               String       @id @default(uuid())
+  flowId           String       @map("flow_id")
+  stepOrder        Int          @map("step_order") // 1, 2, 3
+  roleId           String       @map("role_id")
+  requiredPosition String?      @map("required_position")
+
+  flow             ApprovalFlow @relation(fields: [flowId], references: [id], onDelete: Cascade)
+  role             Role         @relation(fields: [roleId], references: [id])
+
+  @@map("approval_steps")
+}
+
+model ApprovalInstance {
+  id           String        @id @default(uuid())
+  documentType String        @map("document_type") // PO, DIRECT_PURCHASE
+  documentId   String        @map("document_id")
+  documentNumber String      @map("document_number")
+  currentStep  Int           @default(1) @map("current_step")
+  totalSteps   Int           @default(1) @map("total_steps")
+  status       String        @default("PENDING") // PENDING, APPROVED, REJECTED, REVISION_REQUIRED
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+
+  logs         ApprovalLog[]
+
+  @@map("approval_instances")
+}
+
+model ApprovalLog {
+  id         String           @id @default(uuid())
+  instanceId String           @map("instance_id")
+  stepOrder  Int              @map("step_order")
+  approverId String           @map("approver_id")
+  action     String           // APPROVE, REJECT, REVISION_REQUIRED
+  comments   String?
+  actedAt    DateTime         @default(now()) @map("acted_at")
+
+  instance   ApprovalInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  approver   User             @relation(fields: [approverId], references: [id])
+
+  @@map("approval_logs")
+}
+
+// ==========================================
+// 6. GOODS RECEIVING & QUALITY CHECK (QC)
+// ==========================================
+
+model GoodsReceipt {
+  id                 String             @id @default(uuid())
+  grNumber           String             @unique @map("gr_number") // GR-YYYYMM-XXXX
+  poId               String?            @map("po_id")
+  supplierId         String?            @map("supplier_id")
+  arrivalDate        DateTime           @default(now()) @map("arrival_date")
+  receivedBy         String             @map("received_by")
+  deliveryNoteNumber String?            @map("delivery_note_number")
+  invoiceNumber      String?            @map("invoice_number")
+  destination        String             @default("STOCK") // STOCK, USER_REQUEST
+  qcStatus           String             @default("PASSED") // PASSED, PARTIAL, REJECTED
+  status             String             @default("POSTED") // DRAFT, RECEIVED, QC_PENDING, QC_PASSED, QC_PARTIAL, QC_REJECTED, POSTED
+  notes              String?
+  createdAt          DateTime           @default(now()) @map("created_at")
+  updatedAt          DateTime           @updatedAt @map("updated_at")
+
+  purchaseOrder      PurchaseOrder?     @relation(fields: [poId], references: [id])
+  supplier           Supplier?          @relation(fields: [supplierId], references: [id])
+  items              GoodsReceiptItem[]
+  handovers          HandoverDocument[]
+
+  @@map("goods_receipts")
+}
+
+model GoodsReceiptItem {
+  id           String            @id @default(uuid())
+  grId         String            @map("gr_id")
+  poItemId     String?           @map("po_item_id")
+  itemId       String            @map("item_id")
+  warehouseId  String?           @map("warehouse_id")
+  locationId   String?           @map("location_id")
+  orderQty     Float             @map("order_qty")
+  receivedQty  Float             @map("received_qty")
+  goodQty      Float             @map("good_qty")
+  damagedQty   Float             @default(0) @map("damaged_qty")
+  rejectedQty  Float             @default(0) @map("rejected_qty")
+  remainingQty Float             @default(0) @map("remaining_qty")
+  notes        String?
+
+  goodsReceipt GoodsReceipt      @relation(fields: [grId], references: [id], onDelete: Cascade)
+  poItem       PurchaseOrderItem? @relation(fields: [poItemId], references: [id])
+  item         Item              @relation(fields: [itemId], references: [id])
+  warehouse    Warehouse?        @relation(fields: [warehouseId], references: [id])
+  location     WarehouseLocation? @relation(fields: [locationId], references: [id])
+
+  @@map("goods_receipt_items")
+}
+
+// ==========================================
+// 7. GOODS ISSUE & HANDOVER
+// ==========================================
+
+model GoodsIssue {
+  id           String           @id @default(uuid())
+  giNumber     String           @unique @map("gi_number") // GI-YYYYMM-XXXX
+  requesterId  String           @map("requester_id")
+  departmentId String           @map("department_id")
+  warehouseId  String           @map("warehouse_id")
+  issueDate    DateTime         @default(now()) @map("issue_date")
+  prId         String?          @map("pr_id")
+  notes        String?
+  createdBy    String?          @map("created_by")
+  createdAt    DateTime         @default(now()) @map("created_at")
+
+  requester    User             @relation(fields: [requesterId], references: [id])
+  department   Department       @relation(fields: [departmentId], references: [id])
+  warehouse    Warehouse        @relation(fields: [warehouseId], references: [id])
+  purchaseRequest PurchaseRequest? @relation(fields: [prId], references: [id])
+  items        GoodsIssueItem[]
+  handovers    HandoverDocument[]
+
+  @@map("goods_issues")
+}
+
+model GoodsIssueItem {
+  id         String             @id @default(uuid())
+  giId       String             @map("gi_id")
+  itemId     String             @map("item_id")
+  locationId String?            @map("location_id")
+  quantity   Float
+  unitId     String             @map("unit_id")
+  notes      String?
+
+  goodsIssue GoodsIssue         @relation(fields: [giId], references: [id], onDelete: Cascade)
+  item       Item               @relation(fields: [itemId], references: [id])
+  location   WarehouseLocation? @relation(fields: [locationId], references: [id])
+  unit       Unit               @relation(fields: [unitId], references: [id])
+
+  @@map("goods_issue_items")
+}
+
+model HandoverDocument {
+  id                    String         @id @default(uuid())
+  hoNumber              String         @unique @map("ho_number") // HO-YYYYMM-XXXX
+  requesterId           String         @map("requester_id")
+  departmentId          String         @map("department_id")
+  prId                  String?        @map("pr_id")
+  grId                  String?        @map("gr_id")
+  giId                  String?        @map("gi_id")
+  handoverDate          DateTime       @default(now()) @map("handover_date")
+  receiverName          String         @map("receiver_name")
+  receiverSignatureNote String?        @map("receiver_signature_note")
+  status                String         @default("WAITING_HANDOVER") // WAITING_HANDOVER, RECEIVED_BY_USER, COMPLETED
+  notes                 String?
+  createdAt             DateTime       @default(now()) @map("created_at")
+
+  requester             User           @relation(fields: [requesterId], references: [id])
+  department            Department     @relation(fields: [departmentId], references: [id])
+  purchaseRequest       PurchaseRequest? @relation(fields: [prId], references: [id])
+  goodsReceipt          GoodsReceipt?  @relation(fields: [grId], references: [id])
+  goodsIssue            GoodsIssue?    @relation(fields: [giId], references: [id])
+  items                 HandoverItem[]
+
+  @@map("handover_documents")
+}
+
+model HandoverItem {
+  id       String           @id @default(uuid())
+  hoId     String           @map("ho_id")
+  itemId   String           @map("item_id")
+  quantity Float
+  unitId   String           @map("unit_id")
+  notes    String?
+
+  handover HandoverDocument @relation(fields: [hoId], references: [id], onDelete: Cascade)
+  item     Item             @relation(fields: [itemId], references: [id])
+  unit     Unit             @relation(fields: [unitId], references: [id])
+
+  @@map("handover_items")
+}
+
+// ==========================================
+// 8. DIRECT PURCHASE
+// ==========================================
+
+model DirectPurchase {
+  id                   String               @id @default(uuid())
+  dpNumber             String               @unique @map("dp_number") // DP-YYYYMM-XXXX
+  prId                 String?              @map("pr_id")
+  storeName            String               @map("store_name")
+  invoiceReceiptNumber String?              @map("invoice_receipt_number")
+  purchaseDate         DateTime             @default(now()) @map("purchase_date")
+  purchaserName        String               @map("purchaser_name")
+  totalAmount          Float                @default(0) @map("total_amount")
+  attachmentUrl        String?              @map("attachment_url")
+  status               String               @default("COMPLETED")
+  notes                String?
+  createdAt            DateTime             @default(now()) @map("created_at")
+
+  purchaseRequest      PurchaseRequest?     @relation(fields: [prId], references: [id])
+  items                DirectPurchaseItem[]
+
+  @@map("direct_purchases")
+}
+
+model DirectPurchaseItem {
+  id             String         @id @default(uuid())
+  dpId           String         @map("dp_id")
+  itemId         String         @map("item_id")
+  quantity       Float
+  unitId         String         @map("unit_id")
+  unitPrice      Float          @map("unit_price")
+  subtotal       Float          @default(0)
+
+  directPurchase DirectPurchase @relation(fields: [dpId], references: [id], onDelete: Cascade)
+  item           Item           @relation(fields: [itemId], references: [id])
+  unit           Unit           @relation(fields: [unitId], references: [id])
+
+  @@map("direct_purchase_items")
+}
+
+// ==========================================
+// 9. STOCK ENGINE & LEDGER
+// ==========================================
+
+model StockBalance {
+  id          String             @id @default(uuid())
+  itemId      String             @map("item_id")
+  warehouseId String             @map("warehouse_id")
+  locationId  String?            @map("location_id")
+  quantity    Float              @default(0)
+  reservedQty Float              @default(0) @map("reserved_qty")
+  updatedAt   DateTime           @updatedAt @map("updated_at")
+
+  item        Item               @relation(fields: [itemId], references: [id])
+  warehouse   Warehouse          @relation(fields: [warehouseId], references: [id])
+  location    WarehouseLocation? @relation(fields: [locationId], references: [id])
+
+  @@unique([itemId, warehouseId, locationId])
+  @@map("stock_balances")
+}
+
+model StockTransaction {
+  id                String             @id @default(uuid())
+  transactionNumber String             @map("transaction_number")
+  transactionType   String             @map("transaction_type") // STOCK_IN, STOCK_OUT, TRANSFER, ADJUSTMENT_IN, ADJUSTMENT_OUT, RETURN, RECEIVING, ISSUE
+  itemId            String             @map("item_id")
+  warehouseId       String             @map("warehouse_id")
+  locationId        String?            @map("location_id")
+  referenceType     String             @map("reference_type") // PR, PO, GR, GI, HO, DP, ADJUSTMENT
+  referenceId       String             @map("reference_id")
+  quantity          Float              // positive for additions, negative for deductions
+  balanceBefore     Float              @map("balance_before")
+  balanceAfter      Float              @map("balance_after")
+  unitCost          Float?             @map("unit_cost")
+  notes             String?
+  createdBy         String?            @map("created_by")
+  createdAt         DateTime           @default(now()) @map("created_at")
+
+  item              Item               @relation(fields: [itemId], references: [id])
+  warehouse         Warehouse          @relation(fields: [warehouseId], references: [id])
+  location          WarehouseLocation? @relation(fields: [locationId], references: [id])
+
+  @@map("stock_transactions")
+}
+
+// ==========================================
+// 10. SYSTEM INFRASTRUCTURE: ATTACHMENTS, AUDIT, NOTIFICATIONS, SEQUENCE
+// ==========================================
+
+model Attachment {
+  id           String   @id @default(uuid())
+  documentType String   @map("document_type") // PR, PO, QUOTATION, GR, DP
+  documentId   String   @map("document_id")
+  fileName     String   @map("file_name")
+  originalName String   @map("original_name")
+  fileSize     Int      @map("file_size")
+  mimeType     String   @map("mime_type")
+  filePath     String   @map("file_path")
+  uploadedBy   String?  @map("uploaded_by")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("attachments")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String?  @map("user_id")
+  roleId    String?  @map("role_id")
+  title     String
+  message   String
+  link      String?
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User?    @relation(fields: [userId], references: [id])
+  role      Role?    @relation(fields: [roleId], references: [id])
+
+  @@map("notifications")
+}
+
+model AuditLog {
+  id             String   @id @default(uuid())
+  userId         String?  @map("user_id")
+  userName       String   @map("user_name")
+  action         String   // e.g., CREATE_PR, APPROVE_PO, RECEIVE_GOODS
+  module         String   // e.g., PR, PO, STOCK, WAREHOUSE, APPROVAL
+  documentNumber String?  @map("document_number")
+  oldValue       String?  @map("old_value")
+  newValue       String?  @map("new_value")
+  ipAddress      String?  @map("ip_address")
+  userAgent      String?  @map("user_agent")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  user           User?    @relation(fields: [userId], references: [id])
+
+  @@map("audit_logs")
+}
+
+model SystemSetting {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  value       String
+  description String?
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("system_settings")
+}
+
+// Transaction-safe sequential document numbering
+model DocumentSequence {
+  id           String   @id @default(uuid())
+  prefix       String   // PR, PO, GR, GI, HO, DP
+  yearMonth    String   @map("year_month") // YYYYMM e.g. 202610
+  lastSequence Int      @default(0) @map("last_sequence")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@unique([prefix, yearMonth])
+  @@map("document_sequences")
+}
