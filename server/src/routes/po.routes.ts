@@ -52,6 +52,7 @@ router.get('/pending-items', authenticate, async (req: Request, res: Response, n
     const prItems = await prisma.purchaseRequestItem.findMany({
       where: {
         purchaseQty: { gt: 0 },
+        status: { notIn: ['ORDERED', 'COMPLETED'] },
         purchaseRequest: {
           status: { notIn: ['DRAFT', 'CANCELLED', 'REJECTED'] },
         },
@@ -180,10 +181,17 @@ router.get('/:id', authenticate, async (req: Request, res: Response, next: NextF
       },
     });
 
+    let cleanNotes = po.notes || '';
+    if (cleanNotes.includes('<!-- PR_ITEMS:')) {
+      cleanNotes = cleanNotes.replace(/\n?<!-- PR_ITEMS: .*? -->/g, '').trim();
+    }
+
     return res.json({
       success: true,
       data: {
         ...po,
+        notes: cleanNotes,
+        items: (po.items || []).filter((it: any) => it.quantity > 0),
         approvalInstance,
       },
     });
@@ -231,53 +239,7 @@ router.post(
       let calculatedDiscountTotal = 0;
       let calculatedTaxTotal = 0;
 
-      const preparedItems = data.items.flatMap((item) => {
-        // If this item was consolidated from multiple PR items
-        if (item.prItemIds && item.prItemIds.length > 1) {
-          // Create records or assign first prItemId to main record
-          const lineGross = item.quantity * item.unitPrice;
-          const lineDiscount = lineGross * ((item.discount || 0) / 100);
-          const lineNet = lineGross - lineDiscount;
-          const lineTax = lineNet * ((item.taxPercent || 0) / 100);
-          const lineSubtotal = lineNet + lineTax;
-
-          calculatedSubtotal += lineGross;
-          calculatedDiscountTotal += lineDiscount;
-          calculatedTaxTotal += lineTax;
-
-          // Create primary PO item with primary prItemId
-          const primary = {
-            prItemId: item.prItemIds[0],
-            itemId: item.itemId,
-            specification: item.specification,
-            quantity: item.quantity,
-            unitId: item.unitId,
-            unitPrice: item.unitPrice,
-            discount: item.discount,
-            taxPercent: item.taxPercent,
-            subtotal: lineSubtotal,
-            receivedQty: 0,
-            remainingQty: item.quantity,
-          };
-
-          // Also create tracking links for the other consolidated prItemIds with 0 qty/subtotal so Prisma relations bind them
-          const secondaries = item.prItemIds.slice(1).map((secId: string) => ({
-            prItemId: secId,
-            itemId: item.itemId,
-            specification: item.specification ? `${item.specification} (Konsolidasi item PR)` : '(Konsolidasi item PR)',
-            quantity: 0,
-            unitId: item.unitId,
-            unitPrice: 0,
-            discount: 0,
-            taxPercent: 0,
-            subtotal: 0,
-            receivedQty: 0,
-            remainingQty: 0,
-          }));
-
-          return [primary, ...secondaries];
-        }
-
+      const preparedItems = data.items.map((item) => {
         const lineGross = item.quantity * item.unitPrice;
         const lineDiscount = lineGross * ((item.discount || 0) / 100);
         const lineNet = lineGross - lineDiscount;
@@ -288,19 +250,19 @@ router.post(
         calculatedDiscountTotal += lineDiscount;
         calculatedTaxTotal += lineTax;
 
-        return [{
+        return {
           prItemId: (item.prItemIds && item.prItemIds[0]) || item.prItemId || null,
           itemId: item.itemId,
           specification: item.specification,
           quantity: item.quantity,
           unitId: item.unitId,
           unitPrice: item.unitPrice,
-          discount: item.discount,
-          taxPercent: item.taxPercent,
+          discount: item.discount || 0,
+          taxPercent: item.taxPercent || 0,
           subtotal: lineSubtotal,
           receivedQty: 0,
           remainingQty: item.quantity,
-        }];
+        };
       });
 
       const totalAmount = calculatedSubtotal - calculatedDiscountTotal + calculatedTaxTotal;
@@ -310,6 +272,18 @@ router.post(
           success: false,
           message: 'Total nilai PO harus lebih besar dari 0.',
         });
+      }
+
+      // Extract all linked PR item IDs (including all consolidated ones)
+      const linkedPrItemIds = data.items
+        .flatMap((it) => (it.prItemIds && it.prItemIds.length > 0 ? it.prItemIds : [it.prItemId]))
+        .filter(Boolean) as string[];
+
+      let finalNotes = data.notes || '';
+      if (linkedPrItemIds.length > 0) {
+        finalNotes = finalNotes
+          ? `${finalNotes}\n<!-- PR_ITEMS: ${linkedPrItemIds.join(',')} -->`
+          : `<!-- PR_ITEMS: ${linkedPrItemIds.join(',')} -->`;
       }
 
       const poNumber = await generateDocumentNumber(prisma, 'PO');
@@ -327,7 +301,7 @@ router.post(
           discount: calculatedDiscountTotal,
           taxAmount: calculatedTaxTotal,
           totalAmount,
-          notes: data.notes,
+          notes: finalNotes,
           status: 'DRAFT',
           purchaseType: data.purchaseType,
           createdBy: user.name,
@@ -339,10 +313,6 @@ router.post(
       });
 
       // Update PR items status and parent PR status
-      const linkedPrItemIds = data.items
-        .flatMap((it) => (it.prItemIds && it.prItemIds.length > 0 ? it.prItemIds : [it.prItemId]))
-        .filter(Boolean) as string[];
-
       if (linkedPrItemIds.length > 0) {
         await prisma.purchaseRequestItem.updateMany({
           where: { id: { in: linkedPrItemIds } },
@@ -534,8 +504,15 @@ router.delete(
         });
       }
 
-      // Collect linked PR item IDs
-      const prItemIds = po.items.map((it) => it.prItemId).filter(Boolean) as string[];
+      // Collect linked PR item IDs (including from metadata if items were consolidated)
+      let prItemIds = po.items.map((it) => it.prItemId).filter(Boolean) as string[];
+      if (po.notes && po.notes.includes('<!-- PR_ITEMS:')) {
+        const match = po.notes.match(/<!-- PR_ITEMS: (.*?) -->/);
+        if (match && match[1]) {
+          const extraIds = match[1].split(',').map((s) => s.trim()).filter(Boolean);
+          prItemIds = Array.from(new Set([...prItemIds, ...extraIds]));
+        }
+      }
 
       // Delete PO (cascades to PO items)
       await prisma.purchaseOrder.delete({

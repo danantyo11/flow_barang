@@ -277,7 +277,9 @@ export const PODetailPage: React.FC = () => {
           <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
             Rincian Barang yang Dipesan
           </h2>
-          <span className="text-xs font-semibold text-slate-500">{po.items?.length || 0} Item</span>
+          <span className="text-xs font-semibold text-slate-500">
+            {po.items?.filter((it: any) => it.quantity > 0).length || 0} Item
+          </span>
         </div>
 
         <div className="overflow-x-auto">
@@ -296,7 +298,7 @@ export const PODetailPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {po.items?.map((it: any) => (
+              {po.items?.filter((it: any) => it.quantity > 0).map((it: any) => (
                 <tr key={it.id} className="hover:bg-slate-50/50">
                   <td className="px-4 py-3.5">
                     <div className="font-bold text-slate-900">{it.item?.itemName}</div>

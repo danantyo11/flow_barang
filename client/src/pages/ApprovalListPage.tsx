@@ -154,15 +154,17 @@ export const ApprovalListPage: React.FC = () => {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
-                        {inst.document.items.map((it: any) => (
-                          <tr key={it.id}>
-                            <td className="px-3 py-2 font-medium text-slate-800">{it.item?.itemName}</td>
-                            <td className="px-3 py-2 text-right font-bold text-slate-900">{it.quantity}</td>
-                            <td className="px-3 py-2 text-slate-500">{it.unit?.code}</td>
-                            <td className="px-3 py-2 text-right text-slate-700">{formatCurrency(it.unitPrice)}</td>
-                            <td className="px-3 py-2 text-right font-bold text-slate-900">{formatCurrency(it.subtotal)}</td>
-                          </tr>
-                        ))}
+                        {inst.document.items
+                          .filter((it: any) => it.quantity > 0)
+                          .map((it: any) => (
+                            <tr key={it.id}>
+                              <td className="px-3 py-2 font-medium text-slate-800">{it.item?.itemName}</td>
+                              <td className="px-3 py-2 text-right font-bold text-slate-900">{it.quantity}</td>
+                              <td className="px-3 py-2 text-slate-500">{it.unit?.code}</td>
+                              <td className="px-3 py-2 text-right text-slate-700">{formatCurrency(it.unitPrice)}</td>
+                              <td className="px-3 py-2 text-right font-bold text-slate-900">{formatCurrency(it.subtotal)}</td>
+                            </tr>
+                          ))}
                       </tbody>
                     </table>
                   </div>

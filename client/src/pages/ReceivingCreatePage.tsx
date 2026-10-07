@@ -54,7 +54,9 @@ export const ReceivingCreatePage: React.FC = () => {
     const defaultWh = whList.length > 0 ? whList[0] : null;
     const defaultLoc = defaultWh?.locations?.length > 0 ? defaultWh.locations[0] : null;
 
-    const prepared = (po.items || []).map((it: any) => {
+    const prepared = (po.items || [])
+      .filter((it: any) => it.quantity > 0)
+      .map((it: any) => {
       const remaining = it.remainingQty !== undefined ? it.remainingQty : it.quantity;
       return {
         poItemId: it.id,
