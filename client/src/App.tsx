@@ -27,6 +27,7 @@ import { MasterDataPage } from './pages/MasterDataPage.js';
 import { ReportsPage } from './pages/ReportsPage.js';
 import { AuditTrailPage } from './pages/AuditTrailPage.js';
 import { SettingsPage } from './pages/SettingsPage.js';
+import { TrackingPage } from './pages/TrackingPage.js';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
@@ -60,6 +61,7 @@ export function App() {
             >
               <Route index element={<Navigate to="/dashboard" replace />} />
               <Route path="dashboard" element={<DashboardPage />} />
+              <Route path="tracking" element={<TrackingPage />} />
 
               {/* Procurement */}
               <Route path="purchase-requests" element={<PRListPage />} />

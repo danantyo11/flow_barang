@@ -22,6 +22,7 @@ import auditRoutes from './routes/audit.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
 import uploadRoutes from './routes/upload.routes.js';
 import settingsRoutes from './routes/settings.routes.js';
+import trackingRoutes from './routes/tracking.routes.js';
 
 import { errorHandler } from './middleware/errorHandler.js';
 
@@ -73,6 +74,7 @@ app.use('/api/audit-logs', auditRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/tracking', trackingRoutes);
 
 // Error Handling Middleware
 app.use(errorHandler);

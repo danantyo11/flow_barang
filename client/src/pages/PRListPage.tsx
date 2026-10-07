@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api.js';
 import { StatusBadge } from '../components/ui/StatusBadge.js';
 import { useAuth } from '../context/AuthContext.js';
-import { Plus, Search, Filter, FileText, ChevronRight, AlertCircle } from 'lucide-react';
+import { Plus, Search, Filter, FileText, ChevronRight, AlertCircle, Clock } from 'lucide-react';
 
 export const PRListPage: React.FC = () => {
   const [prs, setPrs] = useState<any[]>([]);
@@ -177,7 +177,20 @@ export const PRListPage: React.FC = () => {
                       <StatusBadge status={pr.status} />
                     </td>
                     <td className="px-4 py-3.5 text-right">
-                      <ChevronRight className="w-4 h-4 text-slate-400 inline" />
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/tracking?q=${pr.prNumber}`);
+                          }}
+                          title="Lacak Status Alur"
+                          className="p-1.5 hover:bg-slate-200 text-slate-500 hover:text-indigo-600 rounded-lg transition"
+                        >
+                          <Clock className="w-4 h-4" />
+                        </button>
+                        <ChevronRight className="w-4 h-4 text-slate-400 inline" />
+                      </div>
                     </td>
                   </tr>
                 ))}

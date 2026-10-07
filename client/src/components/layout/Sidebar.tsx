@@ -18,6 +18,8 @@ import {
   CreditCard,
   Building2,
   Tags,
+  Clock,
+  Compass,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.js';
 
@@ -36,6 +38,7 @@ export const Sidebar: React.FC = () => {
       title: 'UTAMA',
       items: [
         { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+        { label: 'Status Tracking', path: '/tracking', icon: Clock },
       ],
     },
     {

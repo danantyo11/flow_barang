@@ -99,6 +99,13 @@ export const PRDetailPage: React.FC = () => {
 
         {/* Action Buttons */}
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => navigate(`/tracking?q=${pr.prNumber}`)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-sm transition"
+          >
+            <Clock className="w-4 h-4 text-amber-400" />
+            Lacak Status Alur
+          </button>
           {pr.status === 'DRAFT' && ['ADMIN', 'REQUESTER'].includes(user?.roleName || '') && (
             <button
               onClick={handleSubmitDraft}

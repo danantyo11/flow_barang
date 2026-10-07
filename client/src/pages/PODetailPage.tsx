@@ -102,6 +102,14 @@ export const PODetailPage: React.FC = () => {
         {/* Action Buttons */}
         <div className="flex items-center gap-2">
           <button
+            onClick={() => navigate(`/tracking?q=${po.poNumber}`)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-sm transition"
+          >
+            <Clock className="w-4 h-4 text-amber-400" />
+            Lacak Status Alur
+          </button>
+
+          <button
             onClick={() => window.print()}
             className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-slate-200 text-slate-700 font-semibold text-xs rounded-xl hover:bg-slate-50 shadow-sm transition"
           >

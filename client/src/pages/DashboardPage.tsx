@@ -69,6 +69,14 @@ export const DashboardPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => navigate('/tracking')}
+            className="px-3.5 py-2 bg-white/10 hover:bg-white/20 border border-white/20 active:scale-95 text-white font-bold text-xs rounded-xl shadow-lg transition flex items-center gap-1.5"
+          >
+            <Clock className="w-3.5 h-3.5 text-amber-400" />
+            Lacak Status Alur
+          </button>
+
           {user?.roleName === 'REQUESTER' && (
             <button
               onClick={() => navigate('/purchase-requests/new')}
@@ -122,12 +130,21 @@ export const DashboardPage: React.FC = () => {
             </p>
           </div>
         </div>
-        <button
-          onClick={() => navigate('/purchase-requests')}
-          className="text-xs font-bold text-amber-800 hover:text-amber-950 flex items-center gap-1 flex-shrink-0"
-        >
-          Lihat Dokumen <ChevronRight className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <button
+            onClick={() => navigate('/tracking?q=PR-202610-0001')}
+            className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-sm transition"
+          >
+            <Clock className="w-3.5 h-3.5" />
+            Lacak Milestone Live
+          </button>
+          <button
+            onClick={() => navigate('/purchase-requests')}
+            className="text-xs font-bold text-amber-800 hover:text-amber-950 flex items-center gap-1"
+          >
+            Lihat Dokumen <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       {/* KPI Cards Grid */}
