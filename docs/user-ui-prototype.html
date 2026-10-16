@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portal Pengajuan Barang - FlowRequest</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Custom scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.4); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(156, 163, 175, 0.6); }
+    .badge-draft { background-color: rgba(107, 114, 128, 0.15); color: #6b7280; border: 1px solid rgba(107, 114, 128, 0.3); }
+    .badge-gudang { background-color: rgba(245, 158, 11, 0.15); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.3); }
+    .badge-approver { background-color: rgba(59, 130, 246, 0.15); color: #2563eb; border: 1px solid rgba(59, 130, 246, 0.3); }
+    .badge-po { background-color: rgba(139, 92, 246, 0.15); color: #7c3aed; border: 1px solid rgba(139, 92, 246, 0.3); }
+    .badge-completed { background-color: rgba(16, 185, 129, 0.15); color: #059669; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .badge-rejected { background-color: rgba(239, 68, 68, 0.15); color: #dc2626; border: 1px solid rgba(239, 68, 68, 0.3); }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col font-sans selection:bg-blue-500 selection:text-white">
+
+  <!-- TOP HEADER / NAVBAR -->
+  <header class="sticky top-0 z-30 bg-white border-b border-slate-200 px-4 sm:px-6 py-3 flex items-center justify-between shadow-xs">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-md shadow-blue-500/20">
+        FR
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-base sm:text-lg font-bold tracking-tight text-slate-900">FlowRequest Hub</h1>
+          <span class="text-xs px-2 py-0.5 rounded-full font-medium bg-blue-100 text-blue-700">Portal Pegawai (Requestor)</span>
+        </div>
+        <p class="text-xs text-slate-500">Sistem Pengajuan & Pengadaan Barang Terpadu</p>
+      </div>
+    </div>
+
+    <!-- User Profile & Quick Actions -->
+    <div class="flex items-center gap-3">
+      <button onclick="switchTab('create')" class="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow-sm transition">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+        <span>Ajukan Barang Baru</span>
+      </button>
+
+      <div class="h-6 w-px bg-slate-200 hidden sm:block"></div>
+
+      <!-- User Info -->
+      <div class="flex items-center gap-2.5 pl-1">
+        <div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 font-semibold text-xs flex items-center justify-center ring-2 ring-blue-500/20">
+          AN
+        </div>
+        <div class="hidden md:block text-left">
+          <div class="text-xs font-semibold leading-tight text-slate-900">Ahmad Nurul</div>
+          <div class="text-[11px] text-slate-500">Staff Operasional (IT Div.)</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- NAVIGATION TABS -->
+  <nav class="bg-white border-b border-slate-200 px-4 sm:px-6">
+    <div class="flex gap-2 sm:gap-6 overflow-x-auto text-xs sm:text-sm font-medium">
+      <button id="nav-dashboard" onclick="switchTab('dashboard')" class="py-3 px-1 border-b-2 border-blue-600 text-blue-600 font-semibold flex items-center gap-2 whitespace-nowrap transition">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+        <span>Dashboard Permohonan</span>
+      </button>
+
+      <button id="nav-create" onclick="switchTab('create')" class="py-3 px-1 border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-2 whitespace-nowrap transition">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+        <span>Form Pengajuan (PR)</span>
+      </button>
+
+      <button id="nav-tracking" onclick="switchTab('tracking')" class="py-3 px-1 border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-2 whitespace-nowrap transition">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+        <span>Detail & Pelacakan Live</span>
+      </button>
+
+      <button id="nav-history" onclick="switchTab('history')" class="py-3 px-1 border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-2 whitespace-nowrap transition">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        <span>Riwayat Permohonan Saya</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- MAIN WRAPPER -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
+
+    <!-- ==================== TAB 1: DASHBOARD ==================== -->
+    <section id="tab-dashboard" class="space-y-6">
+      <!-- Welcome Hero Banner -->
+      <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-sky-600 text-white p-6 shadow-md">
+        <div class="relative z-10 max-w-2xl">
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-white/20 backdrop-blur-md mb-2">
+            ✨ Sistem Permohonan Otomatis v2.4
+          </span>
+          <h2 class="text-xl sm:text-2xl font-bold tracking-tight">Halo, Ahmad! Butuh perlengkapan atau aset kantor baru?</h2>
+          <p class="text-xs sm:text-sm text-blue-100 mt-1">Ajukan permohonan barang (PR) secara praktis. Sistem akan otomatis mengecek stok gudang dan mengeskalasikan persetujuan ke pimpinan secara berjenjang.</p>
+          
+          <div class="mt-4 flex flex-wrap gap-2.5">
+            <button onclick="switchTab('create')" class="px-4 py-2 bg-white text-blue-700 hover:bg-blue-50 text-xs font-bold rounded-lg shadow transition flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+              Mulai Buat PR Baru
+            </button>
+            <button onclick="viewPRDetail('PR-202610-004')" class="px-4 py-2 bg-blue-700/60 hover:bg-blue-700 text-white border border-white/20 text-xs font-semibold rounded-lg backdrop-blur transition flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+              Lacak PR Terakhir (#PR-202610-004)
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPI METRIC CARDS -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Card 1 -->
+        <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:border-blue-500/50 transition">
+          <div class="flex items-center justify-between text-slate-500">
+            <span class="text-xs font-medium">Total Permohonan</span>
+            <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            </div>
+          </div>
+          <div class="text-2xl font-bold mt-2 text-slate-900">14</div>
+          <p class="text-xs text-slate-500 mt-1"><span class="text-emerald-600 font-semibold">+2</span> bulan Oktober 2026</p>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:border-amber-500/50 transition">
+          <div class="flex items-center justify-between text-slate-500">
+            <span class="text-xs font-medium">Dalam Verifikasi Gudang</span>
+            <div class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
+            </div>
+          </div>
+          <div class="text-2xl font-bold mt-2 text-amber-600">2</div>
+          <p class="text-xs text-slate-500 mt-1">Pengecekan fisik rak stok</p>
+        </div>
+
+        <!-- Card 3 -->
+        <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:border-blue-500/50 transition">
+          <div class="flex items-center justify-between text-slate-500">
+            <span class="text-xs font-medium">Menunggu Otorisasi</span>
+            <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+            </div>
+          </div>
+          <div class="text-2xl font-bold mt-2 text-blue-600">3</div>
+          <p class="text-xs text-slate-500 mt-1">Eskalasi bertingkat (Spv/Mgr)</p>
+        </div>
+
+        <!-- Card 4 -->
+        <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:border-emerald-500/50 transition">
+          <div class="flex items-center justify-between text-slate-500">
+            <span class="text-xs font-medium">Selesai / Diterima</span>
+            <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+            </div>
+          </div>
+          <div class="text-2xl font-bold mt-2 text-emerald-600">9</div>
+          <p class="text-xs text-slate-500 mt-1">Barang telah diserahterimakan</p>
+        </div>
+      </div>
+
+      <!-- RECENT ACTIVE REQUESTS TABLE -->
+      <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+        <div class="p-4 sm:p-5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h3 class="text-sm sm:text-base font-bold text-slate-900">Permohonan Aktif & Terbaru</h3>
+            <p class="text-xs text-slate-500">Daftar dokumen PR yang sedang berjalan dalam tahapan proses</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs text-slate-500">Real-time sync:</span>
+            <span class="inline-flex items-center gap-1 text-xs text-emerald-600 font-medium">
+              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Aktif
+            </span>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold">
+                <th class="py-3 px-4">No. PR</th>
+                <th class="py-3 px-4">Tanggal Pengajuan</th>
+                <th class="py-3 px-4">Tujuan / Keperluan</th>
+                <th class="py-3 px-4">Total Item</th>
+                <th class="py-3 px-4">Estimasi Biaya</th>
+                <th class="py-3 px-4">Posisi Tahapan</th>
+                <th class="py-3 px-4 text-center">Aksi</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200">
+              <!-- Row 1 -->
+              <tr class="hover:bg-slate-50/80 transition">
+                <td class="py-3.5 px-4 font-mono font-bold text-blue-600">PR-202610-004</td>
+                <td class="py-3.5 px-4 text-slate-500">16 Okt 2026</td>
+                <td class="py-3.5 px-4">
+                  <div class="font-medium text-slate-800">Upgrade RAM Server & Switch Kantor</div>
+                  <span class="text-[11px] text-slate-500">Kebutuhan infrastruktur IT Cabang</span>
+                </td>
+                <td class="py-3.5 px-4 text-slate-600">2 Jenis Barang</td>
+                <td class="py-3.5 px-4 font-semibold text-slate-900 font-mono">Rp 36.500.000</td>
+                <td class="py-3.5 px-4">
+                  <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold badge-approver">
+                    <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span> Approval Level 4 (Manager)
+                  </span>
+                </td>
+                <td class="py-3.5 px-4 text-center">
+                  <button onclick="viewPRDetail('PR-202610-004')" class="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded font-medium transition">
+                    Lacak Detail
+                  </button>
+                </td>
+              </tr>
+
+              <!-- Row 2 -->
+              <tr class="hover:bg-slate-50/80 transition">
+                <td class="py-3.5 px-4 font-mono font-bold text-blue-600">PR-202610-003</td>
+                <td class="py-3.5 px-4 text-slate-500">15 Okt 2026</td>
+                <td class="py-3.5 px-4">
+                  <div class="font-medium text-slate-800">Kertas A4 80gr & Toner Cartridge HP</div>
+                  <span class="text-[11px] text-slate-500">Kebutuhan ATK rutin bulanan</span>
+                </td>
+                <td class="py-3.5 px-4 text-slate-600">4 Jenis Barang</td>
+                <td class="py-3.5 px-4 font-semibold text-slate-900 font-mono">Rp 4.250.000</td>
+                <td class="py-3.5 px-4">
+                  <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold badge-po">
+                    <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span> Purchasing (PO Terbit)
+                  </span>
+                </td>
+                <td class="py-3.5 px-4 text-center">
+                  <button onclick="viewPRDetail('PR-202610-003')" class="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded font-medium transition">
+                    Lacak Detail
+                  </button>
+                </td>
+              </tr>
+
+              <!-- Row 3 -->
+              <tr class="hover:bg-slate-50/80 transition">
+                <td class="py-3.5 px-4 font-mono font-bold text-blue-600">PR-202610-002</td>
+                <td class="py-3.5 px-4 text-slate-500">14 Okt 2026</td>
+                <td class="py-3.5 px-4">
+                  <div class="font-medium text-slate-800">Monitor Eksternal 27" Dell & Dongle HDMI</div>
+                  <span class="text-[11px] text-slate-500">Peralatan desainer UI/UX baru</span>
+                </td>
+                <td class="py-3.5 px-4 text-slate-600">2 Jenis Barang</td>
+                <td class="py-3.5 px-4 font-semibold text-slate-900 font-mono">Rp 8.900.000</td>
+                <td class="py-3.5 px-4">
+                  <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold badge-gudang">
+                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Verifikasi Stok Gudang
+                  </span>
+                </td>
+                <td class="py-3.5 px-4 text-center">
+                  <button onclick="viewPRDetail('PR-202610-002')" class="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded font-medium transition">
+                    Lacak Detail
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 2: CREATE PR FORM ==================== -->
+    <section id="tab-create" class="hidden space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h2 class="text-lg font-bold text-slate-900">Form Pengajuan Permohonan Barang (PR)</h2>
+          <p class="text-xs text-slate-500">Lengkapi rincian kebutuhan barang. Estimasi harga akan menjadi acuan routing approval berjenjang.</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="resetForm()" class="px-3 py-1.5 border border-slate-300 text-xs font-medium rounded-lg hover:bg-slate-100 transition">
+            Reset Formulir
+          </button>
+          <button type="button" onclick="saveAsDraft()" class="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-xs font-semibold rounded-lg transition">
+            Simpan Draf
+          </button>
+        </div>
+      </div>
+
+      <form id="prForm" onsubmit="handlePRSubmit(event)" class="space-y-6">
+        <!-- HEADER INFORMATION CARD -->
+        <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-blue-600 flex items-center gap-1.5">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            1. Informasi Dasar Dokumen
+          </h3>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Nomor PR (Otomatis)</label>
+              <input type="text" value="PR-202610-005 (Draf Baru)" disabled class="w-full text-xs font-mono bg-slate-100 border border-slate-200 rounded-lg px-3 py-2 text-slate-500 cursor-not-allowed">
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Nama Pemohon</label>
+              <input type="text" value="Ahmad Nurul" disabled class="w-full text-xs bg-slate-100 border border-slate-200 rounded-lg px-3 py-2 text-slate-500 cursor-not-allowed">
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Departemen / Divisi <span class="text-red-500">*</span></label>
+              <select required class="w-full text-xs bg-white border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                <option value="IT" selected>Teknologi Informasi (IT)</option>
+                <option value="OPS">Operasional & Logistik</option>
+                <option value="FIN">Keuangan & Akuntansi</option>
+                <option value="MKT">Pemasaran & Bisnis</option>
+                <option value="HR">SDM & Umum (HRGA)</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Tgl Dibutuhkan <span class="text-red-500">*</span></label>
+              <input type="date" required value="2026-10-25" class="w-full text-xs bg-white border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Keperluan & Alasan Pengajuan <span class="text-red-500">*</span></label>
+            <textarea required rows="2" placeholder="Contoh: Pengadaan switch gigabit dan kabel patchcord untuk ekspansi ruang kerja developer lantai 3..." class="w-full text-xs bg-white border border-slate-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none"></textarea>
+          </div>
+        </div>
+
+        <!-- ITEMS TABLE CARD -->
+        <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h3 class="text-xs font-bold uppercase tracking-wider text-blue-600 flex items-center gap-1.5">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                2. Rincian Daftar Barang Kebutuhan
+              </h3>
+              <p class="text-xs text-slate-500">Gudang akan memverifikasi apakah barang dapat dipenuhi dari sisa stok fisik atau harus dibeli (PO).</p>
+            </div>
+            <button type="button" onclick="addNewItemRow()" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold rounded-lg transition">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+              + Tambah Baris Barang
+            </button>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs border-collapse" id="itemsTable">
+              <thead>
+                <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold">
+                  <th class="py-2.5 px-3 w-8">#</th>
+                  <th class="py-2.5 px-3 min-w-[200px]">Nama Barang <span class="text-red-500">*</span></th>
+                  <th class="py-2.5 px-3 min-w-[220px]">Spesifikasi / Merk / Keterangan</th>
+                  <th class="py-2.5 px-3 w-24">Qty <span class="text-red-500">*</span></th>
+                  <th class="py-2.5 px-3 w-24">Satuan <span class="text-red-500">*</span></th>
+                  <th class="py-2.5 px-3 w-36">Estimasi Harga Satuan (Rp)</th>
+                  <th class="py-2.5 px-3 w-36">Total Estimasi (Rp)</th>
+                  <th class="py-2.5 px-3 w-12 text-center">Hapus</th>
+                </tr>
+              </thead>
+              <tbody id="itemsTableBody" class="divide-y divide-slate-200">
+                <!-- Item 1 -->
+                <tr>
+                  <td class="py-2.5 px-3 text-slate-400 font-mono text-center">1</td>
+                  <td class="py-2.5 px-3">
+                    <input type="text" required value="Switch Gigabit 24-Port Managed" placeholder="Nama barang..." class="w-full text-xs bg-white border border-slate-300 rounded px-2.5 py-1.5 focus:ring-1 focus:ring-blue-500 focus:outline-none">
+                  </td>
+                  <td class="py-2.5 px-3">
+                    <input type="text" value="Cisco CBS250-24T-4G atau selevel" placeholder="Spesifikasi / tipe..." class="w-full text-xs bg-white border border-slate-300 rounded px-2.5 py-1.5 focus:ring-1 focus:ring-blue-500 focus:outline-none">
+                  </td>
+                  <td class="py-2.5 px-3">
+                    <input type="number" min="1" required value="2" oninput="calculateRow(this)" class="item-qty w-full text-xs bg-white border border-slate-300 rounded px-2.5 py-1.5 focus:ring-1 focus:ring-blue-500 focus:outline-none">
+                  </td>
+                  <td class="py-2.5 px-3">
+                    <select class="w-full text-xs bg-white border border-slate-300 rounded px-2 py-1.5 focus:ring-1 focus:ring-blue-500 focus:outline-none">
+                      <option value="Unit" selected>Unit</option>
+                      <option value="Pcs">Pcs</option>
+                      <option value="Box">Box</option>
+                      <option value="Roll">Roll</option>
+                      <option value="Set">Set</option>
+                    </select>
+                  </td>
+                  <td class="py-2.5 px-3">
+                    <input type="number" min="0" step="500" required value="4800000" oninput="calculateRow(this)" class="item-price w-full text-xs bg-white border border-slate-300 rounded px-2.5 py-1.5 focus:ring-1 focus:ring-blue-500 focus:outline-none font-mono">
+                  </td>
+                  <td class="py-2.5 px-3 font-mono font-semibold item-subtotal text-slate-900">
+                    Rp 9.600.000
+                  </td>
+                  <td class="py-2.5 px-3 text-center">
+                    <button type="button" onclick="removeRow(this)" class="text-slate-400 hover:text-red-500 transition p-1">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>
+                  </td>
+                </tr>
+
+                <!-- Item 2 -->
+                <tr>
+                  <td class="py-2.5 px-3 text-slate-400 font-mono text-center">2</td>
+                  <td class="py-2.5 px-3">
+                    <input type="text" required value="Patch Cord Cat6 1.5 Meter" placeholder="Nama barang..." class="w-full text-xs bg-white border border-slate-300 rounded px-2.5 py-1.5 focus:ring-1 focus:ring-blue-500 focus:outline-none">
+                  </td>
+                  <td class="py-2.5 px-3">
+                    <input type="text" value="Schneider / Belden warna Biru Original" placeholder="Spesifikasi / tipe..." class="w-full text-xs bg-white border border-slate-300 rounded px-2.5 py-1.5 focus:ring-1 focus:ring-blue-500 focus:outline-none">
+                  </td>
+                  <td class="py-2.5 px-3">
+                    <input type="number" min="1" required value="20" oninput="calculateRow(this)" class="item-qty w-full text-xs bg-white border border-slate-300 rounded px-2.5 py-1.5 focus:ring-1 focus:ring-blue-500 focus:outline-none">
+                  </td>
+                  <td class="py-2.5 px-3">
+                    <select class="w-full text-xs bg-white border border-slate-300 rounded px-2 py-1.5 focus:ring-1 focus:ring-blue-500 focus:outline-none">
+                      <option value="Unit">Unit</option>
+                      <option value="Pcs" selected>Pcs</option>
+                      <option value="Box">Box</option>
+                      <option value="Roll">Roll</option>
+                      <option value="Set">Set</option>
+                    </select>
+                  </td>
+                  <td class="py-2.5 px-3">
+                    <input type="number" min="0" step="500" required value="35000" oninput="calculateRow(this)" class="item-price w-full text-xs bg-white border border-slate-300 rounded px-2.5 py-1.5 focus:ring-1 focus:ring-blue-500 focus:outline-none font-mono">
+                  </td>
+                  <td class="py-2.5 px-3 font-mono font-semibold item-subtotal text-slate-900">
+                    Rp 700.000
+                  </td>
+                  <td class="py-2.5 px-3 text-center">
+                    <button type="button" onclick="removeRow(this)" class="text-slate-400 hover:text-red-500 transition p-1">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- SUMMARY & DYNAMIC ROUTING PREVIEW -->
+          <div class="mt-4 pt-4 border-t border-slate-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-slate-50 p-4 rounded-xl">
+            <div class="space-y-1">
+              <span class="text-xs font-semibold text-blue-600 uppercase tracking-wide flex items-center gap-1">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                Prediksi Alur Persetujuan (Threshold Dynamic Routing)
+              </span>
+              <p class="text-xs text-slate-600" id="routingHint">
+                Total estimasi <b class="text-slate-900">Rp 10.300.000</b> akan diproses Gudang terlebih dahulu, lalu memerlukan otorisasi bertahap hingga: <span class="font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">Level 4 (Kepala Bagian / Manager)</span>
+              </p>
+            </div>
+
+            <div class="text-right w-full md:w-auto">
+              <div class="text-xs text-slate-500">Total Estimasi Belanja PR:</div>
+              <div class="text-2xl font-bold font-mono text-blue-600" id="grandTotalDisplay">Rp 10.300.000</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- FORM ACTION BUTTONS -->
+        <div class="flex items-center justify-end gap-3 pt-2">
+          <button type="button" onclick="switchTab('dashboard')" class="px-5 py-2.5 border border-slate-300 text-xs font-semibold rounded-lg hover:bg-slate-100 transition">
+            Batal
+          </button>
+          <button type="submit" class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-sm shadow-blue-500/20 transition flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+            Kirim Pengajuan Permohonan (Submit PR)
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <!-- ==================== TAB 3: DETAIL & TRACKING ==================== -->
+    <section id="tab-tracking" class="hidden space-y-6">
+      <!-- Tracker Header Bar -->
+      <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-2.5">
+            <h2 class="text-lg font-bold font-mono text-blue-600" id="detailPrNumber">PR-202610-004</h2>
+            <span id="detailStatusBadge" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold badge-approver">
+              <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span> PENDING_APPROVAL (Level 4 - Manager)
+            </span>
+          </div>
+          <p class="text-xs text-slate-500 mt-1">Upgrade RAM Server & Switch Kantor &bull; Diajukan pada 16 Okt 2026 &bull; Pemohon: Ahmad Nurul (IT Divisi)</p>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button onclick="window.print()" class="px-3 py-1.5 border border-slate-300 text-xs font-medium rounded-lg hover:bg-slate-100 transition flex items-center gap-1.5">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+            Cetak Form PR
+          </button>
+          <button onclick="switchTab('history')" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-xs font-semibold rounded-lg transition">
+            Kembali ke Daftar
+          </button>
+        </div>
+      </div>
+
+      <!-- VISUAL WORKFLOW PROGRESS STEPPER -->
+      <div class="bg-white border border-slate-200 rounded-xl p-5 sm:p-6 shadow-sm">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-6">
+          Alur Status & Siklus Realtime
+        </h3>
+
+        <!-- Stepper Container -->
+        <div class="relative">
+          <div class="grid grid-cols-1 md:grid-cols-5 gap-4 relative z-10">
+            <!-- Step 1: Requestor Submit -->
+            <div class="flex md:flex-col items-center md:items-center text-left md:text-center gap-3 md:gap-2">
+              <div class="w-10 h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shadow-md ring-4 ring-emerald-100">
+                ✓
+              </div>
+              <div>
+                <div class="text-xs font-bold text-emerald-600">1. Pengajuan PR</div>
+                <div class="text-[11px] text-slate-500">Ahmad Nurul &bull; 16 Okt 08:30</div>
+                <span class="inline-block mt-0.5 text-[10px] font-medium text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">SUBMITTED</span>
+              </div>
+            </div>
+
+            <!-- Step 2: Gudang Stock Check -->
+            <div class="flex md:flex-col items-center md:items-center text-left md:text-center gap-3 md:gap-2">
+              <div class="w-10 h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shadow-md ring-4 ring-emerald-100">
+                ✓
+              </div>
+              <div>
+                <div class="text-xs font-bold text-emerald-600">2. Cek Stok Gudang</div>
+                <div class="text-[11px] text-slate-500">Budi (Gudang) &bull; 16 Okt 09:10</div>
+                <span class="inline-block mt-0.5 text-[10px] font-medium text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">STOK TIDAK CUKUP (BELI)</span>
+              </div>
+            </div>
+
+            <!-- Step 3: Dynamic Multi-Level Approval -->
+            <div class="flex md:flex-col items-center md:items-center text-left md:text-center gap-3 md:gap-2">
+              <div class="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm shadow-md ring-4 ring-blue-100 animate-pulse">
+                3
+              </div>
+              <div>
+                <div class="text-xs font-bold text-blue-600">3. Otorisasi PR</div>
+                <div class="text-[11px] text-slate-800 font-semibold">Sedang di Manager IT (Lvl 4)</div>
+                <span class="inline-block mt-0.5 text-[10px] font-medium text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded">PENDING APPROVAL</span>
+              </div>
+            </div>
+
+            <!-- Step 4: Purchasing PO Creation -->
+            <div class="flex md:flex-col items-center md:items-center text-left md:text-center gap-3 md:gap-2 opacity-50">
+              <div class="w-10 h-10 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center font-bold text-sm border-2 border-slate-300">
+                4
+              </div>
+              <div>
+                <div class="text-xs font-bold text-slate-600">4. Penerbitan PO</div>
+                <div class="text-[11px] text-slate-400">Divisi Purchasing</div>
+                <span class="inline-block mt-0.5 text-[10px] font-medium text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">MENUNGGU PR</span>
+              </div>
+            </div>
+
+            <!-- Step 5: Goods Receiving & Done -->
+            <div class="flex md:flex-col items-center md:items-center text-left md:text-center gap-3 md:gap-2 opacity-50">
+              <div class="w-10 h-10 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center font-bold text-sm border-2 border-slate-300">
+                5
+              </div>
+              <div>
+                <div class="text-xs font-bold text-slate-600">5. Serah Terima Fisik</div>
+                <div class="text-[11px] text-slate-400">Gudang & Pemohon</div>
+                <span class="inline-block mt-0.5 text-[10px] font-medium text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">WAITING DELIVERY</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TWO COLUMNS: ITEMS DETAILS & AUDIT TRAIL TIMELINE -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Col 1 & 2: ITEMS BREAKDOWN -->
+        <div class="lg:col-span-2 space-y-6">
+          <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
+            <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+              Rincian Barang & Verifikasi Ketersediaan Gudang
+            </h3>
+
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold">
+                    <th class="py-2.5 px-3">Barang & Spesifikasi</th>
+                    <th class="py-2.5 px-3 text-center">Permintaan</th>
+                    <th class="py-2.5 px-3 text-center bg-amber-500/10">Stok Rak Gudang</th>
+                    <th class="py-2.5 px-3 text-center bg-blue-500/10">Wajib Beli (PO)</th>
+                    <th class="py-2.5 px-3 text-right">Estimasi Harga</th>
+                    <th class="py-2.5 px-3 text-right">Subtotal Belanja</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200">
+                  <tr>
+                    <td class="py-3 px-3">
+                      <div class="font-bold text-slate-900">RAM Server DDR4 ECC 32GB 3200MHz</div>
+                      <div class="text-[11px] text-slate-500">Kingston Server Premier / Samsung Original</div>
+                    </td>
+                    <td class="py-3 px-3 text-center font-semibold text-slate-700">4 Keping</td>
+                    <td class="py-3 px-3 text-center font-semibold text-amber-600 bg-amber-50">0 (Kosong)</td>
+                    <td class="py-3 px-3 text-center font-bold text-blue-600 bg-blue-50">4 Keping</td>
+                    <td class="py-3 px-3 text-right font-mono text-slate-700">Rp 3.500.000</td>
+                    <td class="py-3 px-3 text-right font-mono font-bold text-slate-900">Rp 14.000.000</td>
+                  </tr>
+
+                  <tr>
+                    <td class="py-3 px-3">
+                      <div class="font-bold text-slate-900">Core Switch 48-Port PoE+ L3 Managed</div>
+                      <div class="text-[11px] text-slate-500">Cisco Catalyst 1000 Series Gigabit</div>
+                    </td>
+                    <td class="py-3 px-3 text-center font-semibold text-slate-700">1 Unit</td>
+                    <td class="py-3 px-3 text-center font-semibold text-amber-600 bg-amber-50">0 (Kosong)</td>
+                    <td class="py-3 px-3 text-center font-bold text-blue-600 bg-blue-50">1 Unit</td>
+                    <td class="py-3 px-3 text-right font-mono text-slate-700">Rp 22.500.000</td>
+                    <td class="py-3 px-3 text-right font-mono font-bold text-slate-900">Rp 22.500.000</td>
+                  </tr>
+                </tbody>
+                <tfoot>
+                  <tr class="border-t-2 border-slate-200 font-bold bg-slate-50">
+                    <td colspan="5" class="py-3 px-3 text-right text-xs text-slate-700">Total Rencana Pembelian (Qty To Buy):</td>
+                    <td class="py-3 px-3 text-right font-mono text-sm text-blue-600">Rp 36.500.000</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+
+            <!-- Warehouse Note Box -->
+            <div class="p-3.5 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-900 space-y-1">
+              <div class="font-bold flex items-center gap-1.5">
+                <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                Catatan Petugas Gudang (Budi Hartono - 16 Okt 2026, 09:12):
+              </div>
+              <p class="text-[11px] leading-relaxed text-amber-800">"Stok RAM ECC 32GB dan Switch 48-port di Bin-Rak IT Gudang Utama sedang kosong (0 unit). Seluruh kuantitas direkomendasikan untuk dibeli melalui Purchasing (PO)."</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Col 3: AUDIT TRAIL LOG -->
+        <div class="space-y-6">
+          <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
+            <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              Riwayat Jejak Persetujuan (Audit Trail)
+            </h3>
+
+            <div class="relative pl-6 space-y-5 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
+              <!-- Event 1 -->
+              <div class="relative">
+                <div class="absolute -left-[27px] top-1 w-3.5 h-3.5 rounded-full bg-emerald-500 ring-4 ring-emerald-100"></div>
+                <div class="text-xs font-bold text-slate-900">PR Disubmit Pemohon</div>
+                <div class="text-[11px] text-slate-500">Ahmad Nurul &bull; 16 Okt 08:30</div>
+                <p class="text-[11px] mt-0.5 text-slate-600">Pengajuan baru dibuat dan diteruskan ke bagian Gudang.</p>
+              </div>
+
+              <!-- Event 2 -->
+              <div class="relative">
+                <div class="absolute -left-[27px] top-1 w-3.5 h-3.5 rounded-full bg-amber-500 ring-4 ring-amber-100"></div>
+                <div class="text-xs font-bold text-slate-900">Verifikasi Stok Gudang Selesai</div>
+                <div class="text-[11px] text-slate-500">Budi Hartono (Gudang) &bull; 16 Okt 09:12</div>
+                <p class="text-[11px] mt-0.5 text-slate-600">Stok 0, qty_to_buy ditetapkan 5 item. Dialihkan ke approver Level 3.</p>
+              </div>
+
+              <!-- Event 3 -->
+              <div class="relative">
+                <div class="absolute -left-[27px] top-1 w-3.5 h-3.5 rounded-full bg-blue-500 ring-4 ring-blue-100"></div>
+                <div class="text-xs font-bold text-slate-900">Disetujui Supervisor & Eskalasi Otomatis</div>
+                <div class="text-[11px] text-slate-500">Dian Pratama (Spv IT) &bull; 16 Okt 09:40</div>
+                <p class="text-[11px] mt-0.5 text-slate-600">Nilai Rp 36.5M melebihi limit Supervisor (Maks Rp 10M). Eskalasi otomatis ke Kepala Bagian / Manager.</p>
+              </div>
+
+              <!-- Event 4 (Pending) -->
+              <div class="relative">
+                <div class="absolute -left-[27px] top-1 w-3.5 h-3.5 rounded-full bg-slate-300 ring-4 ring-slate-100 animate-pulse"></div>
+                <div class="text-xs font-bold text-blue-600">Menunggu Review Manager IT</div>
+                <div class="text-[11px] text-slate-500">Hendro Sujarwo (Manager IT)</div>
+                <p class="text-[11px] mt-0.5 text-slate-500">Notifikasi email telah terkirim ke approver terkait.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 4: HISTORY ==================== -->
+    <section id="tab-history" class="hidden space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h2 class="text-lg font-bold text-slate-900">Riwayat Pengajuan Permohonan Barang Saya</h2>
+          <p class="text-xs text-slate-500">Seluruh arsip permohonan yang pernah Anda ajukan beserta dokumen terkait.</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <input type="text" id="searchInput" oninput="filterHistoryTable()" placeholder="Cari No. PR / Barang..." class="text-xs bg-white border border-slate-300 rounded-lg px-3 py-1.5 focus:ring-1 focus:ring-blue-500 focus:outline-none w-48 sm:w-64">
+          <select id="statusFilter" onchange="filterHistoryTable()" class="text-xs bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 focus:ring-1 focus:ring-blue-500 focus:outline-none">
+            <option value="ALL">Semua Status</option>
+            <option value="PENDING">Sedang Berjalan</option>
+            <option value="COMPLETED">Selesai Diterima</option>
+            <option value="REJECTED">Ditolak</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- TABLE -->
+      <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs" id="historyTable">
+            <thead>
+              <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold">
+                <th class="py-3 px-4">No. PR</th>
+                <th class="py-3 px-4">Tanggal Buat</th>
+                <th class="py-3 px-4">Deskripsi Keperluan</th>
+                <th class="py-3 px-4">No. PO (Jika Ada)</th>
+                <th class="py-3 px-4">Nilai Total</th>
+                <th class="py-3 px-4">Status Terkini</th>
+                <th class="py-3 px-4 text-center">Aksi</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200">
+              <!-- Item 1 -->
+              <tr class="hover:bg-slate-50/80 transition history-row" data-status="PENDING" data-search="PR-202610-004 Upgrade RAM Server Switch">
+                <td class="py-3.5 px-4 font-mono font-bold text-blue-600">PR-202610-004</td>
+                <td class="py-3.5 px-4 text-slate-500">16 Okt 2026</td>
+                <td class="py-3.5 px-4 font-medium text-slate-800">Upgrade RAM Server & Switch Kantor</td>
+                <td class="py-3.5 px-4 font-mono text-slate-400">-</td>
+                <td class="py-3.5 px-4 font-semibold font-mono text-slate-900">Rp 36.500.000</td>
+                <td class="py-3.5 px-4">
+                  <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold badge-approver">
+                    <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span> Approval Level 4
+                  </span>
+                </td>
+                <td class="py-3.5 px-4 text-center">
+                  <button onclick="viewPRDetail('PR-202610-004')" class="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded font-medium transition">
+                    Buka
+                  </button>
+                </td>
+              </tr>
+
+              <!-- Item 2 -->
+              <tr class="hover:bg-slate-50/80 transition history-row" data-status="PENDING" data-search="PR-202610-003 Kertas A4 Toner Cartridge PO-202610-002">
+                <td class="py-3.5 px-4 font-mono font-bold text-blue-600">PR-202610-003</td>
+                <td class="py-3.5 px-4 text-slate-500">15 Okt 2026</td>
+                <td class="py-3.5 px-4 font-medium text-slate-800">Kertas A4 80gr & Toner Cartridge HP</td>
+                <td class="py-3.5 px-4 font-mono text-purple-600 font-semibold">PO-202610-002</td>
+                <td class="py-3.5 px-4 font-semibold font-mono text-slate-900">Rp 4.250.000</td>
+                <td class="py-3.5 px-4">
+                  <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold badge-po">
+                    <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span> PO Released ke Vendor
+                  </span>
+                </td>
+                <td class="py-3.5 px-4 text-center">
+                  <button onclick="viewPRDetail('PR-202610-003')" class="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded font-medium transition">
+                    Buka
+                  </button>
+                </td>
+              </tr>
+
+              <!-- Item 3 -->
+              <tr class="hover:bg-slate-50/80 transition history-row" data-status="COMPLETED" data-search="PR-202609-021 Kabel LAN Cat6 PO-202609-015">
+                <td class="py-3.5 px-4 font-mono font-bold text-blue-600">PR-202609-021</td>
+                <td class="py-3.5 px-4 text-slate-500">28 Sep 2026</td>
+                <td class="py-3.5 px-4 font-medium text-slate-800">Kabel LAN Cat6 300m & RJ45 Connector</td>
+                <td class="py-3.5 px-4 font-mono text-emerald-600 font-semibold">PO-202609-015</td>
+                <td class="py-3.5 px-4 font-semibold font-mono text-slate-900">Rp 2.100.000</td>
+                <td class="py-3.5 px-4">
+                  <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold badge-completed">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Diterima Lengkap (Selesai)
+                  </span>
+                </td>
+                <td class="py-3.5 px-4 text-center">
+                  <button onclick="viewPRDetail('PR-202609-021')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded font-medium transition">
+                    Buka
+                  </button>
+                </td>
+              </tr>
+
+              <!-- Item 4 -->
+              <tr class="hover:bg-slate-50/80 transition history-row" data-status="REJECTED" data-search="PR-202608-011 Kursi Gaming Ergonomis">
+                <td class="py-3.5 px-4 font-mono font-bold text-blue-600">PR-202608-011</td>
+                <td class="py-3.5 px-4 text-slate-500">12 Agu 2026</td>
+                <td class="py-3.5 px-4 font-medium text-slate-800">Kursi Gaming Ergonomis Divisi IT</td>
+                <td class="py-3.5 px-4 font-mono text-slate-400">-</td>
+                <td class="py-3.5 px-4 font-semibold font-mono text-slate-900">Rp 5.400.000</td>
+                <td class="py-3.5 px-4">
+                  <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold badge-rejected">
+                    <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span> Ditolak oleh Manager
+                  </span>
+                </td>
+                <td class="py-3.5 px-4 text-center">
+                  <button onclick="alert('Alasan Penolakan: Harap gunakan alokasi standar kursi kantor reguler HRGA.')" class="px-2.5 py-1 bg-red-50 hover:bg-red-100 text-red-700 rounded font-medium transition">
+                    Lihat Alasan
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- SUCCESS MODAL DIALOG -->
+  <div id="successModal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 text-center shadow-xl space-y-4">
+      <div class="w-14 h-14 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto text-2xl font-bold">
+        ✓
+      </div>
+      <div>
+        <h3 class="text-base font-bold text-slate-900">Permohonan Berhasil Diajukan!</h3>
+        <p class="text-xs text-slate-600 mt-1">Dokumen <span class="font-mono font-bold text-blue-600">PR-202610-005</span> telah diterbitkan ke sistem. Tahapan pertama adalah verifikasi fisik oleh Petugas Gudang.</p>
+      </div>
+      <div class="pt-2 flex items-center justify-center gap-2">
+        <button onclick="closeSuccessModal()" class="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition">
+          Lacak Dokumen Sekarang
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    // Tab Switching
+    function switchTab(tabName) {
+      const tabs = ['dashboard', 'create', 'tracking', 'history'];
+      tabs.forEach(t => {
+        const content = document.getElementById('tab-' + t);
+        const nav = document.getElementById('nav-' + t);
+        if (t === tabName) {
+          content.classList.remove('hidden');
+          nav.classList.add('border-blue-600', 'text-blue-600', 'font-semibold');
+          nav.classList.remove('border-transparent', 'text-slate-500');
+        } else {
+          content.classList.add('hidden');
+          nav.classList.remove('border-blue-600', 'text-blue-600', 'font-semibold');
+          nav.classList.add('border-transparent', 'text-slate-500');
+        }
+      });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Dynamic Row Calculations
+    function formatRupiah(num) {
+      return 'Rp ' + Number(num).toLocaleString('id-ID');
+    }
+
+    function calculateRow(element) {
+      const tr = element.closest('tr');
+      const qty = parseFloat(tr.querySelector('.item-qty').value) || 0;
+      const price = parseFloat(tr.querySelector('.item-price').value) || 0;
+      const subtotal = qty * price;
+      tr.querySelector('.item-subtotal').textContent = formatRupiah(subtotal);
+      calculateGrandTotal();
+    }
+
+    function calculateGrandTotal() {
+      let grandTotal = 0;
+      document.querySelectorAll('#itemsTableBody tr').forEach(tr => {
+        const qty = parseFloat(tr.querySelector('.item-qty').value) || 0;
+        const price = parseFloat(tr.querySelector('.item-price').value) || 0;
+        grandTotal += (qty * price);
+      });
+      document.getElementById('grandTotalDisplay').textContent = formatRupiah(grandTotal);
+
+      // Update Threshold Escalation Hint
+      const hint = document.getElementById('routingHint');
+      if (grandTotal <= 10000000) {
+        hint.innerHTML = `Total estimasi <b class="text-slate-900">${formatRupiah(grandTotal)}</b> cukup disetujui hingga: <span class="font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">Level 3 (Supervisor)</span>`;
+      } else if (grandTotal <= 50000000) {
+        hint.innerHTML = `Total estimasi <b class="text-slate-900">${formatRupiah(grandTotal)}</b> dievaluasi bertahap hingga: <span class="font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">Level 4/6 (Manager)</span>`;
+      } else {
+        hint.innerHTML = `Total estimasi <b class="text-slate-900">${formatRupiah(grandTotal)}</b> memerlukan otorisasi eksekutif: <span class="font-bold text-purple-600 bg-purple-50 px-2 py-0.5 rounded">Level 7/8 (Direktur / Dirut)</span>`;
+      }
+    }
+
+    function addNewItemRow() {
+      const tbody = document.getElementById('itemsTableBody');
+      const rowCount = tbody.querySelectorAll('tr').length + 1;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="py-2.5 px-3 text-slate-400 font-mono text-center">${rowCount}</td>
+        <td class="py-2.5 px-3">
+          <input type="text" required placeholder="Nama barang..." class="w-full text-xs bg-white border border-slate-300 rounded px-2.5 py-1.5 focus:ring-1 focus:ring-blue-500 focus:outline-none">
+        </td>
+        <td class="py-2.5 px-3">
+          <input type="text" placeholder="Spesifikasi / tipe..." class="w-full text-xs bg-white border border-slate-300 rounded px-2.5 py-1.5 focus:ring-1 focus:ring-blue-500 focus:outline-none">
+        </td>
+        <td class="py-2.5 px-3">
+          <input type="number" min="1" required value="1" oninput="calculateRow(this)" class="item-qty w-full text-xs bg-white border border-slate-300 rounded px-2.5 py-1.5 focus:ring-1 focus:ring-blue-500 focus:outline-none">
+        </td>
+        <td class="py-2.5 px-3">
+          <select class="w-full text-xs bg-white border border-slate-300 rounded px-2 py-1.5 focus:ring-1 focus:ring-blue-500 focus:outline-none">
+            <option value="Unit" selected>Unit</option>
+            <option value="Pcs">Pcs</option>
+            <option value="Box">Box</option>
+            <option value="Roll">Roll</option>
+            <option value="Set">Set</option>
+          </select>
+        </td>
+        <td class="py-2.5 px-3">
+          <input type="number" min="0" step="500" required value="0" oninput="calculateRow(this)" class="item-price w-full text-xs bg-white border border-slate-300 rounded px-2.5 py-1.5 focus:ring-1 focus:ring-blue-500 focus:outline-none font-mono">
+        </td>
+        <td class="py-2.5 px-3 font-mono font-semibold item-subtotal text-slate-900">
+          Rp 0
+        </td>
+        <td class="py-2.5 px-3 text-center">
+          <button type="button" onclick="removeRow(this)" class="text-slate-400 hover:text-red-500 transition p-1">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+          </button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+      calculateGrandTotal();
+    }
+
+    function removeRow(btn) {
+      const tbody = document.getElementById('itemsTableBody');
+      if (tbody.querySelectorAll('tr').length <= 1) {
+        alert('Minimal harus ada 1 barang dalam permohonan!');
+        return;
+      }
+      btn.closest('tr').remove();
+      tbody.querySelectorAll('tr').forEach((row, idx) => {
+        row.querySelector('td:first-child').textContent = idx + 1;
+      });
+      calculateGrandTotal();
+    }
+
+    function handlePRSubmit(e) {
+      e.preventDefault();
+      document.getElementById('successModal').classList.remove('hidden');
+    }
+
+    function closeSuccessModal() {
+      document.getElementById('successModal').classList.add('hidden');
+      switchTab('tracking');
+    }
+
+    function saveAsDraft() {
+      alert('Draf berhasil disimpan! Anda dapat melanjutkannya kapan saja.');
+    }
+
+    function resetForm() {
+      if (confirm('Apakah Anda yakin ingin mengosongkan seluruh isian formulir?')) {
+        document.getElementById('prForm').reset();
+        calculateGrandTotal();
+      }
+    }
+
+    function viewPRDetail(prNumber) {
+      document.getElementById('detailPrNumber').textContent = prNumber;
+      switchTab('tracking');
+    }
+
+    function filterHistoryTable() {
+      const search = document.getElementById('searchInput').value.toLowerCase();
+      const status = document.getElementById('statusFilter').value;
+      const rows = document.querySelectorAll('.history-row');
+
+      rows.forEach(r => {
+        const text = r.getAttribute('data-search').toLowerCase();
+        const rowStatus = r.getAttribute('data-status');
+        const matchSearch = text.includes(search);
+        const matchStatus = (status === 'ALL' || rowStatus === status);
+
+        if (matchSearch && matchStatus) {
+          r.style.display = '';
+        } else {
+          r.style.display = 'none';
+        }
+      });
+    }
+
+    // Initialize
+    calculateGrandTotal();
+  </script>
+</body>
+</html>
