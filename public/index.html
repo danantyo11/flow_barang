@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FlowRequest Pro - Sistem Otorisasi & Permohonan Barang</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- =========================================================================
+       1. WINDOWS 11 CUSTOM TITLE BAR
+       ========================================================================= -->
+  <header class="win-titlebar">
+    <div class="win-titlebar-left">
+      <div class="win-app-icon">FR</div>
+      <span class="win-app-title">FlowRequest Pro &mdash; Sistem Permohonan & Otorisasi Barang</span>
+      <span class="win-app-version-badge">Windows Desktop Edition</span>
+    </div>
+
+    <div class="win-titlebar-center">
+      <div class="win-quick-status">
+        <span class="win-status-indicator"></span>
+        <span id="systemStatusText">Sistem Terhubung &bull; Local Database Ready</span>
+      </div>
+    </div>
+
+    <div class="win-titlebar-controls" style="display:flex; align-items:center; gap:4px;">
+      <div id="titlebarUserInfo" style="display:none; align-items:center; gap:8px; margin-right:8px;">
+        <span id="titlebarUserName" style="font-size:11px; font-weight:600; color:#334155;"></span>
+        <button class="win-btn win-btn-sm win-btn-danger" onclick="executeLogout()" style="padding:2px 8px; font-size:10px;">
+          🚪 Keluar
+        </button>
+      </div>
+      <button class="win-caption-btn" title="Minimize" onclick="minimizeWindow()">&#x2014;</button>
+      <button class="win-caption-btn" title="Maximize / Restore" onclick="toggleMaximizeWindow()">&#x25A2;</button>
+      <button class="win-caption-btn close" title="Tutup Aplikasi" onclick="closeWindow()">&#x2715;</button>
+    </div>
+  </header>
+
+  <!-- =========================================================================
+       LOGIN PAGE (WINDOWS 11 FLUENT UI)
+       ========================================================================= -->
+  <div id="loginScreenWrapper" class="win-login-wrapper" style="display:flex;">
+    <div class="win-login-card">
+      <div class="win-login-header">
+        <div class="win-login-brand-icon">FR</div>
+        <h2 class="win-login-title">FlowRequest Pro</h2>
+        <p class="win-login-subtitle">Sistem Permohonan & Otorisasi Barang Terpadu</p>
+      </div>
+
+      <!-- Error Alert -->
+      <div id="loginErrorBox" style="display:none; background:#fee2e2; border:1px solid #fca5a5; color:#991b1b; padding:8px 12px; border-radius:6px; font-size:11.5px; margin-bottom:14px;">
+      </div>
+
+      <!-- Login Form -->
+      <form id="loginForm" onsubmit="handleLoginSubmit(event)">
+        <div class="win-form-group">
+          <label class="win-label">Username atau Email</label>
+          <div class="win-input-icon-wrap">
+            <span class="win-input-icon">👤</span>
+            <input type="text" id="loginUsername" class="win-input win-input-with-icon" placeholder="Masukkan username atau email..." required autocomplete="username">
+          </div>
+        </div>
+
+        <div class="win-form-group">
+          <label class="win-label">Kata Sandi (Password)</label>
+          <div class="win-input-icon-wrap">
+            <span class="win-input-icon">🔒</span>
+            <input type="password" id="loginPassword" class="win-input win-input-with-icon" placeholder="Masukkan kata sandi..." required autocomplete="current-password">
+            <button type="button" class="win-input-toggle-pw" onclick="togglePasswordVisibility()" title="Tampilkan/Sembunyikan password">👁️</button>
+          </div>
+          <span style="font-size:10.5px; color:#64748b; margin-top:3px; display:inline-block;">* Password demo default: <code>password123</code></span>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; font-size:11.5px; color:#475569;">
+          <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+            <input type="checkbox" id="loginRememberMe" checked>
+            <span>Ingat sesi di perangkat ini</span>
+          </label>
+        </div>
+
+        <button type="submit" id="loginSubmitBtn" class="win-btn win-login-btn">
+          <span>Masuk ke Sistem (Sign In)</span>
+        </button>
+      </form>
+
+      <!-- Quick Demo Login Presets -->
+      <div class="win-quick-login-section">
+        <div class="win-quick-login-title">
+          <span>⚡ Masuk Cepat Sebagai Peran Demo:</span>
+        </div>
+        <div class="win-quick-chips">
+          <button type="button" class="win-quick-chip" onclick="quickLoginAs('ahmad', 'password123')">
+            <span>👤 Ahmad (Requestor L1)</span>
+          </button>
+          <button type="button" class="win-quick-chip" onclick="quickLoginAs('joko_gudang', 'password123')">
+            <span>📦 Joko (Gudang L2)</span>
+          </button>
+          <button type="button" class="win-quick-chip" onclick="quickLoginAs('budi_spv', 'password123')">
+            <span>👔 Budi (Supervisor L3)</span>
+          </button>
+          <button type="button" class="win-quick-chip" onclick="quickLoginAs('siti_kabag', 'password123')">
+            <span>👔 Siti (Kabag L4)</span>
+          </button>
+          <button type="button" class="win-quick-chip" onclick="quickLoginAs('hendra_asmen', 'password123')">
+            <span>👔 Hendra (Asmen L5)</span>
+          </button>
+          <button type="button" class="win-quick-chip" onclick="quickLoginAs('bambang_mgr', 'password123')">
+            <span>💼 Bambang (Manager L6)</span>
+          </button>
+          <button type="button" class="win-quick-chip" onclick="quickLoginAs('diana_dir', 'password123')">
+            <span>💼 Diana (Direktur L7)</span>
+          </button>
+          <button type="button" class="win-quick-chip" onclick="quickLoginAs('gunawan_dirut', 'password123')">
+            <span>🏛️ Gunawan (Dirut L8)</span>
+          </button>
+          <button type="button" class="win-quick-chip" onclick="quickLoginAs('maya_purchasing', 'password123')">
+            <span>🛒 Maya (Purchasing L9)</span>
+          </button>
+          <button type="button" class="win-quick-chip" onclick="quickLoginAs('admin', 'password123')">
+            <span>⚙️ Admin (SYST000)</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="win-login-footer-text">
+        Dilindungi oleh Role-Based Access Control (RBAC) & Dynamic Threshold Policy.<br>
+        FlowRequest Pro &copy; 2026. All rights reserved.
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       MAIN APP CONTAINER (SHOWN WHEN LOGGED IN)
+       ========================================================================= -->
+  <div id="appMainContainer" style="display:none; flex:1; flex-direction:column; overflow:hidden;">
+
+  <!-- =========================================================================
+       2. ROLE SWITCHER & ENVIRONMENT BAR (MULTI-ROLE SIMULATOR)
+       ========================================================================= -->
+  <div class="win-role-bar">
+    <div class="win-role-left">
+      <div class="win-role-pill">
+        <span>👤 Role Aktif:</span>
+      </div>
+      <select id="activeRoleSelector" class="win-role-select" onchange="handleRoleChange(this.value)">
+        <option value="2">Level 1: Ahmad Nurul (Petugas / Requestor)</option>
+        <option value="3">Level 2: Joko Susilo (Gudang - Stok & Receiving QC)</option>
+        <option value="4">Level 3: Budi Santoso (Supervisor - Max Rp 5 Jt)</option>
+        <option value="5">Level 4: Siti Rahma (Kepala Bagian - Max Rp 20 Jt)</option>
+        <option value="6">Level 5: Hendra Wijaya (Asisten Manager - Max Rp 50 Jt)</option>
+        <option value="7">Level 6: Ir. Bambang Hartono (Manager - Max Rp 250 Jt | PO Approver)</option>
+        <option value="8">Level 7: Dr. Diana Kusuma (Direktur - Max Rp 1 Miliar | PO Approver)</option>
+        <option value="9">Level 8: Prof. Gunawan Wibisono (Direktur Utama - Unlimited | PO Approver)</option>
+        <option value="10">Level 9: Maya Sartika (Purchasing - Buat & Rilis PO)</option>
+        <option value="1">Level 0: Admin SYST000 (Konfigurasi Matriks & Aturan)</option>
+      </select>
+    </div>
+
+    <div class="win-role-right">
+      <div class="win-limit-tag">
+        <span>Batas Nominal Wewenang PR:</span>
+        <span id="roleLimitDisplay" class="win-limit-val">s/d Rp 250.000.000</span>
+      </div>
+      <div class="win-limit-tag">
+        <span>Hak Otorisasi PO:</span>
+        <span id="rolePOEligibility" class="badge badge-approved">Eligible (Level 6+)</span>
+      </div>
+      <button class="win-btn win-btn-sm win-btn-danger" onclick="executeLogout()" title="Keluar dari sesi ini" style="margin-left:6px;">
+        🚪 Keluar
+      </button>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       3. APP BODY (SIDEBAR + MAIN CONTENT AREA)
+       ========================================================================= -->
+  <div class="win-app-body">
+
+    <!-- SIDEBAR NAVIGATION -->
+    <aside class="win-sidebar">
+      <div class="win-nav-section-title">Navigasi Utama</div>
+
+      <div class="win-nav-item active" onclick="switchView('dashboard')">
+        <span class="win-nav-icon">📊</span>
+        <span>Dashboard Beranda</span>
+      </div>
+
+      <div class="win-nav-section-title">Modul Requestor (Level 1)</div>
+      <div class="win-nav-item" onclick="switchView('create-pr')">
+        <span class="win-nav-icon">📝</span>
+        <span>Buat Form PR Baru</span>
+      </div>
+      <div class="win-nav-item" onclick="switchView('my-pr')">
+        <span class="win-nav-icon">📋</span>
+        <span>Riwayat & Status PR</span>
+      </div>
+
+      <div class="win-nav-section-title">Modul Gudang (Level 2)</div>
+      <div class="win-nav-item" onclick="switchView('gudang-verify')">
+        <span class="win-nav-icon">📦</span>
+        <span>Cek Ketersediaan Stok</span>
+        <span id="badgeGudangQueue" class="win-nav-badge alert">1</span>
+      </div>
+      <div class="win-nav-item" onclick="switchView('gudang-receipt')">
+        <span class="win-nav-icon">🚚</span>
+        <span>Penerimaan Barang (DO)</span>
+        <span id="badgeGRQueue" class="win-nav-badge alert">1</span>
+      </div>
+
+      <div class="win-nav-section-title">Modul Pimpinan (Level 3-8)</div>
+      <div class="win-nav-item" onclick="switchView('approver-pr')">
+        <span class="win-nav-icon">⚡</span>
+        <span>Antrean Approval PR</span>
+        <span id="badgeApproverQueue" class="win-nav-badge danger">1</span>
+      </div>
+      <div class="win-nav-item" onclick="switchView('approver-po')">
+        <span class="win-nav-icon">📑</span>
+        <span>Otorisasi PO (Min Lvl 6)</span>
+        <span id="badgePOQueue" class="win-nav-badge purple">0</span>
+      </div>
+
+      <div class="win-nav-section-title">Modul Purchasing (Level 9)</div>
+      <div class="win-nav-item" onclick="switchView('purchasing')">
+        <span class="win-nav-icon">🛒</span>
+        <span>Proses PO & Rilis Vendor</span>
+        <span id="badgePurchasingQueue" class="win-nav-badge">1</span>
+      </div>
+
+      <div class="win-nav-section-title">Modul Admin SYST000</div>
+      <div class="win-nav-item" onclick="switchView('admin-limits')">
+        <span class="win-nav-icon">⚙️</span>
+        <span>Dynamic PR Threshold</span>
+      </div>
+      <div class="win-nav-item" onclick="switchView('admin-users')">
+        <span class="win-nav-icon">👥</span>
+        <span>Manajemen Pengguna</span>
+      </div>
+
+      <div class="win-nav-section-title">Audit Trail</div>
+      <div class="win-nav-item" onclick="switchView('audit-logs')">
+        <span class="win-nav-icon">📜</span>
+        <span>Riwayat Log Transaksi</span>
+      </div>
+
+      <!-- User Info Footer -->
+      <div class="win-sidebar-footer">
+        <div id="currentUserAvatar" class="win-user-avatar">BH</div>
+        <div class="win-user-info" style="flex:1; overflow:hidden;">
+          <div id="currentUserName" class="win-user-name" style="white-space:nowrap; text-overflow:ellipsis; overflow:hidden;">Ir. Bambang Hartono</div>
+          <div id="currentUserRole" class="win-user-role">Manager (Level 6)</div>
+        </div>
+        <button class="win-btn win-btn-sm" onclick="executeLogout()" title="Keluar dari akun ini" style="padding:4px 8px; font-size:11px;">
+          🚪 Keluar
+        </button>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT VIEWPORT -->
+    <main class="win-content">
+
+      <!-- Command Bar -->
+      <div class="win-commandbar">
+        <div class="win-commandbar-left">
+          <div class="win-page-title-wrap">
+            <h1 id="pageTitle" class="win-page-title">
+              <span>📊 Dashboard Beranda</span>
+            </h1>
+            <span id="pageSubtitle" class="win-page-sub">Ringkasan status permohonan, alur pengadaan, dan metrik sistem</span>
+          </div>
+        </div>
+
+        <div class="win-commandbar-right">
+          <button class="win-btn win-btn-sm" onclick="refreshCurrentView()" title="Muat ulang data">
+            <span>🔄</span> Refresh
+          </button>
+          <button class="win-btn win-btn-sm" onclick="showOfficialPrintModal(null)" title="Pratinjau Cetak Memo">
+            <span>🖨️</span> Cetak Resmi
+          </button>
+          <button class="win-btn win-btn-sm win-btn-danger" onclick="resetDatabaseDemo()" title="Reset data simulasi ke awal">
+            <span>🧹</span> Reset Database
+          </button>
+        </div>
+      </div>
+
+      <!-- VIEW CONTAINER -->
+      <div class="win-view-scroll" id="viewContainer">
+
+        <!-- ===================================================================
+             VIEW 1: DASHBOARD
+             =================================================================== -->
+        <div id="view-dashboard" class="win-view-page">
+          <!-- 4 KPI Cards -->
+          <div class="win-grid-4">
+            <div class="win-card win-kpi-card">
+              <div>
+                <div class="win-kpi-label">Total Permohonan (PR)</div>
+                <div id="kpiTotalPR" class="win-kpi-val">4</div>
+                <div class="win-kpi-sub">Sepanjang periode aktif</div>
+              </div>
+              <div class="win-kpi-icon">📝</div>
+            </div>
+
+            <div class="win-card win-kpi-card">
+              <div>
+                <div class="win-kpi-label">Verifikasi Stok Gudang</div>
+                <div id="kpiInWarehouse" class="win-kpi-val">1</div>
+                <div class="win-kpi-sub">Menunggu input stok rak</div>
+              </div>
+              <div class="win-kpi-icon" style="background:#fef3c7; color:#b45309;">📦</div>
+            </div>
+
+            <div class="win-card win-kpi-card">
+              <div>
+                <div class="win-kpi-label">Menunggu Tindakan Saya</div>
+                <div id="kpiMyAction" class="win-kpi-val">1</div>
+                <div class="win-kpi-sub">Sesuai jenjang wewenang Anda</div>
+              </div>
+              <div class="win-kpi-icon" style="background:#fee2e2; color:#b91c1c;">⏳</div>
+            </div>
+
+            <div class="win-card win-kpi-card">
+              <div>
+                <div class="win-kpi-label">Barang Diterima / Selesai</div>
+                <div id="kpiCompleted" class="win-kpi-val">1</div>
+                <div class="win-kpi-sub">Siklus pengadaan tuntas</div>
+              </div>
+              <div class="win-kpi-icon" style="background:#dcfce7; color:#15803d;">✅</div>
+            </div>
+          </div>
+
+          <!-- Quick Action Banner -->
+          <div class="win-card" style="margin-bottom: 16px; background: linear-gradient(135deg, #0078d4, #005a9e); color: white;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+              <div>
+                <h3 style="font-size:16px; font-weight:700; margin-bottom:4px;">Selamat Datang di FlowRequest Pro Windows Edition</h3>
+                <p style="font-size:12px; color:rgba(255,255,255,0.9); max-width:680px;">
+                  Sistem pengadaan barang otomatis terintegrasi Two-Phase Workflow: Pengecekan Stok Gudang &rarr; Dynamic Threshold Approval Escalation (Level 3-8) &rarr; PO Enforcement (Level 6+) &rarr; Auto-Generated Goods Receiving QC Ticket.
+                </p>
+              </div>
+              <div style="display:flex; gap:8px;">
+                <button class="win-btn" style="background:white; color:#005a9e; font-weight:700;" onclick="switchView('create-pr')">
+                  + Buat Form PR Baru
+                </button>
+                <button class="win-btn" style="background:rgba(255,255,255,0.2); color:white; border-color:rgba(255,255,255,0.3);" onclick="switchView('approver-pr')">
+                  Tinjau Antrean Approval
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Active PR Table -->
+          <div class="win-table-wrap">
+            <div class="win-table-header">
+              <span class="win-table-title">Daftar Dokumen Permohonan Terkini (PR)</span>
+              <button class="win-btn win-btn-sm" onclick="switchView('create-pr')">+ Buat PR Baru</button>
+            </div>
+            <table class="win-table">
+              <thead>
+                <tr>
+                  <th>No. PR</th>
+                  <th>Tanggal</th>
+                  <th>Pemohon & Divisi</th>
+                  <th>Keperluan / Urgensi</th>
+                  <th>Estimasi Belanja</th>
+                  <th>Status Alur</th>
+                  <th>Posisi Dokumen</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="dashboardPRTableBody">
+                <!-- Dynamically filled -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ===================================================================
+             VIEW 2: FORM PENGAJUAN PR (REQUESTOR)
+             =================================================================== -->
+        <div id="view-create-pr" class="win-view-page" style="display:none;">
+          <div class="win-card" style="max-width:960px; margin:0 auto;">
+            <h2 style="font-size:16px; font-weight:700; margin-bottom:14px; border-bottom:1px solid var(--win-border); padding-bottom:10px;">
+              Formulir Permohonan Pengadaan Barang (Purchase Request)
+            </h2>
+
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:12px;">
+              <div class="win-form-group">
+                <label class="win-label">Nomor Dokumen (Otomatis)</label>
+                <input type="text" id="prFormNumber" class="win-input code-badge" value="[Auto-Generated by System]" readonly>
+              </div>
+              <div class="win-form-group">
+                <label class="win-label">Pemohon (Requestor)</label>
+                <input type="text" id="prFormRequestor" class="win-input" value="Ahmad Nurul" readonly>
+              </div>
+              <div class="win-form-group">
+                <label class="win-label">Departemen / Divisi</label>
+                <input type="text" id="prFormDept" class="win-input" value="Teknologi Informasi" readonly>
+              </div>
+              <div class="win-form-group">
+                <label class="win-label">Tanggal Dibutuhkan *</label>
+                <input type="date" id="prFormRequiredDate" class="win-input">
+              </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns: 2fr 1fr; gap:12px;">
+              <div class="win-form-group">
+                <label class="win-label">Urgensi & Alasan Pengadaan *</label>
+                <textarea id="prFormPurpose" class="win-textarea" placeholder="Jelaskan kebutuhan operasional dan justifikasi pengadaan barang ini..."></textarea>
+              </div>
+              <div class="win-form-group">
+                <label class="win-label">Tingkat Prioritas</label>
+                <select id="prFormUrgency" class="win-select">
+                  <option value="NORMAL">Normal / Rutin</option>
+                  <option value="TINGGI">Tinggi (Penting)</option>
+                  <option value="MENDESAK">Mendesak / Emergency</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Items Repeater Table -->
+            <div style="margin-top:16px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <label class="win-label" style="font-size:13px; font-weight:700; margin-bottom:0;">Rincian Barang yang Diminta</label>
+                <button type="button" class="win-btn win-btn-sm" onclick="addPRFormItemRow()">+ Tambah Baris Barang</button>
+              </div>
+
+              <table class="win-table" id="prFormItemsTable" style="border:1px solid var(--win-border); border-radius:6px; overflow:hidden;">
+                <thead>
+                  <tr>
+                    <th style="width:30px;">#</th>
+                    <th>Nama Barang *</th>
+                    <th>Spesifikasi / Merk</th>
+                    <th style="width:80px;">Qty *</th>
+                    <th style="width:90px;">Satuan</th>
+                    <th style="width:160px;">Estimasi Harga Satuan (Rp) *</th>
+                    <th style="width:160px;">Subtotal (Rp)</th>
+                    <th style="width:40px;"></th>
+                  </tr>
+                </thead>
+                <tbody id="prFormItemsBody">
+                  <!-- Form rows dynamically generated -->
+                </tbody>
+              </table>
+
+              <!-- Total Summary Bar -->
+              <div style="display:flex; justify-content:flex-end; gap:20px; align-items:center; padding:12px; background:#f8fafc; border:1px solid var(--win-border); border-top:none; border-radius:0 0 6px 6px;">
+                <span style="font-size:12px; color:#64748b; font-weight:600;">Total Estimasi Nilai Belanja PR:</span>
+                <span id="prFormGrandTotal" style="font-size:18px; font-weight:700; color:#0067c0; font-family:var(--font-mono);">Rp 0</span>
+              </div>
+            </div>
+
+            <!-- Dynamic Threshold Prediction Diagram -->
+            <div class="win-escalation-card">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:12px; font-weight:700; color:#1e3a8a;">
+                  ⚡ Prediksi Dynamic Escalation Routing (Alur Persetujuan Bertingkat)
+                </span>
+                <span id="prPredictBadge" class="badge badge-approval">Membutuhkan: Level 3 (Supervisor)</span>
+              </div>
+              <p style="font-size:11px; color:#475569; margin-top:4px;">
+                Berdasarkan total estimasi nilai belanja di atas, dokumen ini diprediksi akan dievaluasi dan memerlukan otorisasi hingga tingkat pimpinan berikut:
+              </p>
+
+              <div class="win-stepper-wrap" id="prEscalationStepper">
+                <div class="win-step active" id="step-l3">
+                  <div class="win-step-circle">L3</div>
+                  <div class="win-step-title">Supervisor</div>
+                  <div class="win-step-sub">&le; 5 Juta</div>
+                </div>
+                <div class="win-step" id="step-l4">
+                  <div class="win-step-circle">L4</div>
+                  <div class="win-step-title">Kepala Bagian</div>
+                  <div class="win-step-sub">&le; 20 Juta</div>
+                </div>
+                <div class="win-step" id="step-l5">
+                  <div class="win-step-circle">L5</div>
+                  <div class="win-step-title">Asisten Manager</div>
+                  <div class="win-step-sub">&le; 50 Juta</div>
+                </div>
+                <div class="win-step" id="step-l6">
+                  <div class="win-step-circle">L6</div>
+                  <div class="win-step-title">Manager</div>
+                  <div class="win-step-sub">&le; 250 Juta</div>
+                </div>
+                <div class="win-step" id="step-l7">
+                  <div class="win-step-circle">L7</div>
+                  <div class="win-step-title">Direktur</div>
+                  <div class="win-step-sub">&le; 1 Miliar</div>
+                </div>
+                <div class="win-step" id="step-l8">
+                  <div class="win-step-circle">L8</div>
+                  <div class="win-step-title">Direktur Utama</div>
+                  <div class="win-step-sub">&gt; 1 Miliar</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:16px;">
+              <button type="button" class="win-btn" onclick="switchView('dashboard')">Batal</button>
+              <button type="button" class="win-btn win-btn-primary" onclick="submitNewPRForm()">
+                🚀 Kirim Permohonan ke Gudang
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===================================================================
+             VIEW 3: RIWAYAT & DETAIL PELACAKAN PR (REQUESTOR)
+             =================================================================== -->
+        <div id="view-my-pr" class="win-view-page" style="display:none;">
+          <div class="win-table-wrap">
+            <div class="win-table-header">
+              <span class="win-table-title">Riwayat Permohonan Saya</span>
+              <button class="win-btn win-btn-sm win-btn-primary" onclick="switchView('create-pr')">+ Ajukan PR Baru</button>
+            </div>
+            <table class="win-table">
+              <thead>
+                <tr>
+                  <th>No. PR</th>
+                  <th>Tanggal</th>
+                  <th>Keperluan</th>
+                  <th>Total Estimasi</th>
+                  <th>Status</th>
+                  <th>Posisi Dokumen</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="myPRTableBody">
+                <!-- Dynamically filled -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ===================================================================
+             VIEW 4: VERIFIKASI STOK GUDANG (LEVEL 2)
+             =================================================================== -->
+        <div id="view-gudang-verify" class="win-view-page" style="display:none;">
+          <div class="win-card" style="margin-bottom:14px; background:#fffbeb; border-color:#fef3c7;">
+            <div style="display:flex; gap:10px; align-items:flex-start;">
+              <span style="font-size:24px;">📦</span>
+              <div>
+                <h3 style="font-size:13px; font-weight:700; color:#92400e;">Fase 1 - Verifikasi Fisik Ketersediaan Stok Gudang</h3>
+                <p style="font-size:12px; color:#b45309; margin-top:2px;">
+                  Petugas Gudang memverifikasi stok rak barang. Jika barang tersedia lengkap di gudang, permohonan dapat langsung dipenuhi (<span class="badge badge-completed">FULFILLED_BY_STOCK</span>). Jika tidak ada / kurang, tentukan <code>qty_to_buy</code> agar diteruskan ke pimpinan berjenjang.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="win-table-wrap">
+            <div class="win-table-header">
+              <span class="win-table-title">Antrean Permohonan Masuk untuk Cek Fisik Stok</span>
+              <span class="badge badge-gudang">Role Gudang (Level 2)</span>
+            </div>
+            <table class="win-table">
+              <thead>
+                <tr>
+                  <th>No. PR</th>
+                  <th>Tanggal</th>
+                  <th>Pemohon & Dept</th>
+                  <th>Keperluan</th>
+                  <th>Item Permintaan</th>
+                  <th>Nilai Estimasi</th>
+                  <th>Aksi Tindakan</th>
+                </tr>
+              </thead>
+              <tbody id="gudangQueueTableBody">
+                <!-- Dynamically filled -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ===================================================================
+             VIEW 5: ANTREAN APPROVAL PR (LEVEL 3 S/D 8)
+             =================================================================== -->
+        <div id="view-approver-pr" class="win-view-page" style="display:none;">
+          <div class="win-card" style="margin-bottom:14px; background:#eff6ff; border-color:#bfdbfe;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+              <div>
+                <h3 style="font-size:13px; font-weight:700; color:#1e40af;">⚡ Dynamic Threshold Routing PR Approval</h3>
+                <p style="font-size:12px; color:#1d4ed8; margin-top:2px;">
+                  Sistem mengevaluasi nilai belanja vs limit role aktif. Jika nominal &le; limit, permohonan disetujui final. Jika &gt; limit, permohonan otomatis dieskalasikan ke jenjang pimpinan berikutnya.
+                </p>
+              </div>
+              <div style="display:flex; gap:6px;">
+                <button class="win-btn win-btn-sm" onclick="filterApproverList('MY_QUEUE')">Giliran Saya Saja</button>
+                <button class="win-btn win-btn-sm" onclick="filterApproverList('ALL')">Semua PR Pending</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="win-table-wrap">
+            <div class="win-table-header">
+              <span class="win-table-title">Daftar Antrean Permohonan Barang (PR Inbox)</span>
+              <span id="approverInboxCountBadge" class="badge badge-approval">1 Dokumen Perlu Tindakan</span>
+            </div>
+            <table class="win-table">
+              <thead>
+                <tr>
+                  <th>No. PR</th>
+                  <th>Tanggal</th>
+                  <th>Pemohon & Dept</th>
+                  <th>Daftar Nama Barang</th>
+                  <th>Nilai Belanja</th>
+                  <th>Evaluasi Batas Wewenang</th>
+                  <th>Status & Level</th>
+                  <th>Aksi Otorisasi</th>
+                </tr>
+              </thead>
+              <tbody id="approverPRTableBody">
+                <!-- Dynamically filled -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ===================================================================
+             VIEW 6: OTORISASI PURCHASE ORDER (MANAGER LEVEL 6+)
+             =================================================================== -->
+        <div id="view-approver-po" class="win-view-page" style="display:none;">
+          <!-- Security Warning banner if user level < 6 -->
+          <div id="poSecurityAlert" class="win-card" style="margin-bottom:14px; display:none; background:#fee2e2; border-color:#fca5a5;">
+            <div style="display:flex; gap:10px; align-items:flex-start;">
+              <span style="font-size:24px;">🚫</span>
+              <div>
+                <h3 style="font-size:13px; font-weight:700; color:#991b1b;">Akses Terproteksi &mdash; PO Approval Enforcement</h3>
+                <p style="font-size:12px; color:#b91c1c; margin-top:2px;">
+                  Sesuai aturan keamanan sistem, persetujuan Purchase Order (PO) <strong>WAJIB</strong> dilakukan oleh pimpinan dengan jabatan minimal <strong>Manager (Level 6 ke atas)</strong>. Role Anda saat ini tidak memiliki wewenang untuk mengeksekusi persetujuan PO.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="win-table-wrap">
+            <div class="win-table-header">
+              <span class="win-table-title">Antrean Otorisasi Purchase Order (Menunggu Persetujuan Manager+)</span>
+              <span class="badge badge-po">Wajib Minimal Level 6</span>
+            </div>
+            <table class="win-table">
+              <thead>
+                <tr>
+                  <th>No. PO</th>
+                  <th>Tanggal</th>
+                  <th>Vendor Rekanan</th>
+                  <th>Barang Dipesan</th>
+                  <th>No. PR Acuan</th>
+                  <th>Grand Total (+PPN 11%)</th>
+                  <th>Status</th>
+                  <th>Aksi Otorisasi</th>
+                </tr>
+              </thead>
+              <tbody id="poApprovalTableBody">
+                <!-- Dynamically filled -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ===================================================================
+             VIEW 7: PURCHASING (POOL PR & RILIS PO KE VENDOR)
+             =================================================================== -->
+        <div id="view-purchasing" class="win-view-page" style="display:none;">
+          <div class="win-card" style="margin-bottom:14px; background:#f5f3ff; border-color:#ddd6fe;">
+            <div style="display:flex; gap:10px; align-items:flex-start;">
+              <span style="font-size:24px;">🛒</span>
+              <div>
+                <h3 style="font-size:13px; font-weight:700; color:#5b21b6;">Fase 2 - Purchasing & Penerbitan Dokumen Resmi ke Vendor</h3>
+                <p style="font-size:12px; color:#6d28d9; margin-top:2px;">
+                  Tarik PR yang telah <strong>APPROVED</strong> untuk diterbitkan menjadi Purchase Order (PO). Saat PO di-release ke vendor, sistem secara <strong>otomatis menerbitkan tiket Goods Receipt</strong> ke antrean staf Gudang.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 1: PR Approved Pool -->
+          <div class="win-table-wrap">
+            <div class="win-table-header">
+              <span class="win-table-title">1. Pool PR yang Disetujui Final (Siap Dibuatkan PO)</span>
+            </div>
+            <table class="win-table">
+              <thead>
+                <tr>
+                  <th>No. PR</th>
+                  <th>Tanggal Setuju</th>
+                  <th>Pemohon & Dept</th>
+                  <th>Disetujui Oleh</th>
+                  <th>Nilai Belanja</th>
+                  <th>Aksi Purchasing</th>
+                </tr>
+              </thead>
+              <tbody id="purchasingPRPoolBody">
+                <!-- Dynamically filled -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Section 2: PO Management Table -->
+          <div class="win-table-wrap" style="margin-top:20px;">
+            <div class="win-table-header">
+              <span class="win-table-title">2. Daftar Purchase Order (PO) & Status Rilis Vendor</span>
+            </div>
+            <table class="win-table">
+              <thead>
+                <tr>
+                  <th>No. PO</th>
+                  <th>Tanggal PO</th>
+                  <th>Vendor</th>
+                  <th>Total Tagihan</th>
+                  <th>Status PO</th>
+                  <th>Persetujuan Manajer</th>
+                  <th>Aksi Rilis & Cetak</th>
+                </tr>
+              </thead>
+              <tbody id="purchasingPOTableBody">
+                <!-- Dynamically filled -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ===================================================================
+             VIEW 8: PENERIMAAN BARANG MASUK / GOODS RECEIPT (GUDANG QC)
+             =================================================================== -->
+        <div id="view-gudang-receipt" class="win-view-page" style="display:none;">
+          <div class="win-card" style="margin-bottom:14px; background:#ecfdf5; border-color:#a7f3d0;">
+            <div style="display:flex; gap:10px; align-items:flex-start;">
+              <span style="font-size:24px;">🚚</span>
+              <div>
+                <h3 style="font-size:13px; font-weight:700; color:#065f46;">Fase 3 - Penerimaan Fisik Barang & QC Gudang</h3>
+                <p style="font-size:12px; color:#047857; margin-top:2px;">
+                  Tiket di bawah ini otomatis muncul begitu staf Purchasing mengeksekusi <strong>Release PO to Vendor</strong>. Staf Gudang mencatat Surat Jalan (DO), memverifikasi kondisi barang lolos QC, dan menetapkan lokasi rak simpan.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="win-table-wrap">
+            <div class="win-table-header">
+              <span class="win-table-title">Antrean Tiket Penerimaan Barang (Goods Receipt Queue)</span>
+              <span class="badge badge-completed">Otomatis Terbit Saat PO Released</span>
+            </div>
+            <table class="win-table">
+              <thead>
+                <tr>
+                  <th>No. Tiket GR</th>
+                  <th>No. PO Acuan</th>
+                  <th>Vendor Pengirim</th>
+                  <th>Tanggal Terbit Tiket</th>
+                  <th>Status Penerimaan</th>
+                  <th>Surat Jalan / DO</th>
+                  <th>Aksi Verifikasi Fisik</th>
+                </tr>
+              </thead>
+              <tbody id="grQueueTableBody">
+                <!-- Dynamically filled -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ===================================================================
+             VIEW 9: KONFIGURASI DYNAMIC THRESHOLD (ADMIN SYST000)
+             =================================================================== -->
+        <div id="view-admin-limits" class="win-view-page" style="display:none;">
+          <div class="win-card" style="margin-bottom:14px; background:#f8fafc; border-color:#e2e8f0;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+              <div>
+                <h3 style="font-size:13px; font-weight:700; color:#1e293b;">⚙️ Master Dynamic PR Threshold Routing (Level 3 s/d 8)</h3>
+                <p style="font-size:12px; color:#64748b; margin-top:2px;">
+                  Konfigurasi eksklusif Superadmin (SYST000). Mengatur rentang plafon nominal batas kewenangan otorisasi permohonan barang.
+                </p>
+              </div>
+              <span class="badge badge-purple">Khusus Superadmin (SYST000)</span>
+            </div>
+          </div>
+
+          <div class="win-table-wrap">
+            <div class="win-table-header">
+              <span class="win-table-title">Matriks Batas Nominal Persetujuan Berjenjang</span>
+            </div>
+            <table class="win-table">
+              <thead>
+                <tr>
+                  <th>Hierarki</th>
+                  <th>Kode Role</th>
+                  <th>Nama Jabatan</th>
+                  <th>Batas Minimum (Rp)</th>
+                  <th>Batas Maksimum (Rp)</th>
+                  <th>Terakhir Diperbarui</th>
+                  <th>Aksi Ubah</th>
+                </tr>
+              </thead>
+              <tbody id="adminLimitsTableBody">
+                <!-- Dynamically filled -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ===================================================================
+             VIEW 10: MANAJEMEN PENGGUNA (ADMIN SYST000)
+             =================================================================== -->
+        <div id="view-admin-users" class="win-view-page" style="display:none;">
+          <div class="win-table-wrap">
+            <div class="win-table-header">
+              <span class="win-table-title">Daftar Pengguna Sistem & Peran RBAC</span>
+              <button class="win-btn win-btn-sm win-btn-primary" onclick="showAddUserModal()">+ Tambah Pengguna Baru</button>
+            </div>
+            <table class="win-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Username</th>
+                  <th>Nama Lengkap</th>
+                  <th>Email</th>
+                  <th>Peran (Role)</th>
+                  <th>Departemen</th>
+                  <th>Status Akun</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="adminUsersTableBody">
+                <!-- Dynamically filled -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ===================================================================
+             VIEW 11: AUDIT TRAIL LOGS
+             =================================================================== -->
+        <div id="view-audit-logs" class="win-view-page" style="display:none;">
+          <div class="win-table-wrap">
+            <div class="win-table-header">
+              <span class="win-table-title">Riwayat Log Transaksi & Jejak Audit (Audit Trail)</span>
+              <span class="badge badge-draft">Immutable Transaction Log</span>
+            </div>
+            <table class="win-table">
+              <thead>
+                <tr>
+                  <th>Waktu (WIB)</th>
+                  <th>Tipe</th>
+                  <th>No. Dokumen</th>
+                  <th>Pelaku (Actor)</th>
+                  <th>Aksi</th>
+                  <th>Status Sebelum</th>
+                  <th>Status Baru</th>
+                  <th>Catatan Sistem / Transaksi</th>
+                </tr>
+              </thead>
+              <tbody id="auditLogsTableBody">
+                <!-- Dynamically filled -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div><!-- End win-view-scroll -->
+    </main>
+  </div><!-- End win-app-body -->
+  </div><!-- End appMainContainer -->
+
+  <!-- =========================================================================
+       MODALS & FLYOUTS
+       ========================================================================= -->
+
+  <!-- Modal 1: Detail & Stepper PR Review -->
+  <div id="modalPRDetail" class="win-modal-backdrop">
+    <div class="win-modal" style="max-width:800px;">
+      <div class="win-modal-header">
+        <span class="win-modal-title" id="prModalTitle">Detail Permohonan Barang</span>
+        <button class="win-caption-btn close" onclick="closeModal('modalPRDetail')">&#x2715;</button>
+      </div>
+      <div class="win-modal-body" id="prModalBody">
+        <!-- Injected by JS -->
+      </div>
+      <div class="win-modal-footer">
+        <button class="win-btn" onclick="closeModal('modalPRDetail')">Tutup</button>
+        <button class="win-btn win-btn-primary" id="prModalPrintBtn" onclick="printFromDetail()">🖨️ Cetak Memo Resmi</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 2: Gudang Stock Verification Modal -->
+  <div id="modalGudangVerify" class="win-modal-backdrop">
+    <div class="win-modal" style="max-width:760px;">
+      <div class="win-modal-header">
+        <span class="win-modal-title" id="gudangModalTitle">Pengecekan Fisik Stok Gudang</span>
+        <button class="win-caption-btn close" onclick="closeModal('modalGudangVerify')">&#x2715;</button>
+      </div>
+      <div class="win-modal-body">
+        <p style="font-size:12px; color:#475569; margin-bottom:12px;">
+          Masukkan kuantitas fisik yang tersedia di rak penyimpanan gudang. Sistem akan mengalkulasikan sisa yang perlu dibeli (<code>qty_to_buy</code>).
+        </p>
+        <div id="gudangModalItemsContainer"></div>
+      </div>
+      <div class="win-modal-footer">
+        <button class="win-btn" onclick="closeModal('modalGudangVerify')">Batal</button>
+        <button class="win-btn win-btn-success" onclick="submitGudangVerification()">
+          Simpan Verifikasi Stok
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 3: PR Approval / Rejection Modal -->
+  <div id="modalPRApprove" class="win-modal-backdrop">
+    <div class="win-modal" style="max-width:600px;">
+      <div class="win-modal-header">
+        <span class="win-modal-title" id="approveModalTitle">Evaluasi & Otorisasi Permohonan (PR)</span>
+        <button class="win-caption-btn close" onclick="closeModal('modalPRApprove')">&#x2715;</button>
+      </div>
+      <div class="win-modal-body" id="approveModalBody">
+        <!-- Injected by JS -->
+      </div>
+      <div class="win-modal-footer">
+        <button class="win-btn" onclick="closeModal('modalPRApprove')">Batal</button>
+        <button class="win-btn win-btn-danger" onclick="executePRReject()">Tolak Dokumen</button>
+        <button class="win-btn win-btn-success" id="btnExecuteApprove" onclick="executePRApprove()">
+          Setujui Dokumen
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 4: Buat PO (Purchasing) Modal -->
+  <div id="modalCreatePO" class="win-modal-backdrop">
+    <div class="win-modal" style="max-width:780px;">
+      <div class="win-modal-header">
+        <span class="win-modal-title">Buat Purchase Order (PO) Baru</span>
+        <button class="win-caption-btn close" onclick="closeModal('modalCreatePO')">&#x2715;</button>
+      </div>
+      <div class="win-modal-body" id="createPOModalBody">
+        <!-- Injected by JS -->
+      </div>
+      <div class="win-modal-footer">
+        <button class="win-btn" onclick="closeModal('modalCreatePO')">Batal</button>
+        <button class="win-btn win-btn-primary" onclick="submitCreatePO()">
+          Terbitkan Draft PO & Ajukan ke Manager
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 5: Terima Fisik Barang Gudang (Goods Receipt QC) Modal -->
+  <div id="modalProcessGR" class="win-modal-backdrop">
+    <div class="win-modal" style="max-width:820px;">
+      <div class="win-modal-header">
+        <span class="win-modal-title" id="grModalTitle">Pemeriksaan Fisik Barang Masuk & QC</span>
+        <button class="win-caption-btn close" onclick="closeModal('modalProcessGR')">&#x2715;</button>
+      </div>
+      <div class="win-modal-body" id="grModalBody">
+        <!-- Injected by JS -->
+      </div>
+      <div class="win-modal-footer">
+        <button class="win-btn" onclick="closeModal('modalProcessGR')">Batal</button>
+        <button class="win-btn win-btn-success" onclick="submitGRProcessing()">
+          Simpan Hasil Pemeriksaan Fisik
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 6: Edit Limit Threshold (Admin SYST000) Modal -->
+  <div id="modalEditLimit" class="win-modal-backdrop">
+    <div class="win-modal" style="max-width:480px;">
+      <div class="win-modal-header">
+        <span class="win-modal-title">Ubah Batas Plafon Approval</span>
+        <button class="win-caption-btn close" onclick="closeModal('modalEditLimit')">&#x2715;</button>
+      </div>
+      <div class="win-modal-body">
+        <input type="hidden" id="editLimitId">
+        <div class="win-form-group">
+          <label class="win-label">Jabatan / Role</label>
+          <input type="text" id="editLimitRoleName" class="win-input" readonly>
+        </div>
+        <div class="win-form-group">
+          <label class="win-label">Batas Minimum (Rp)</label>
+          <input type="number" id="editLimitMin" class="win-input">
+        </div>
+        <div class="win-form-group">
+          <label class="win-label">Batas Maksimum (Rp)</label>
+          <input type="number" id="editLimitMax" class="win-input">
+        </div>
+      </div>
+      <div class="win-modal-footer">
+        <button class="win-btn" onclick="closeModal('modalEditLimit')">Batal</button>
+        <button class="win-btn win-btn-primary" onclick="submitEditLimit()">Simpan Perubahan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 7: Tambah User (Admin SYST000) Modal -->
+  <div id="modalAddUser" class="win-modal-backdrop">
+    <div class="win-modal" style="max-width:520px;">
+      <div class="win-modal-header">
+        <span class="win-modal-title">Tambah Pengguna Baru (User)</span>
+        <button class="win-caption-btn close" onclick="closeModal('modalAddUser')">&#x2715;</button>
+      </div>
+      <div class="win-modal-body">
+        <div class="win-form-group">
+          <label class="win-label">Username *</label>
+          <input type="text" id="newUserUsername" class="win-input" placeholder="contoh: joko_finance">
+        </div>
+        <div class="win-form-group">
+          <label class="win-label">Nama Lengkap *</label>
+          <input type="text" id="newUserFullName" class="win-input" placeholder="Nama lengkap & gelar">
+        </div>
+        <div class="win-form-group">
+          <label class="win-label">Email</label>
+          <input type="email" id="newUserEmail" class="win-input" placeholder="email@perusahaan.co.id">
+        </div>
+        <div class="win-form-group">
+          <label class="win-label">Peran (Role Hierarki) *</label>
+          <select id="newUserRoleId" class="win-select">
+            <!-- Filled dynamically -->
+          </select>
+        </div>
+        <div class="win-form-group">
+          <label class="win-label">Departemen *</label>
+          <select id="newUserDeptId" class="win-select">
+            <!-- Filled dynamically -->
+          </select>
+        </div>
+      </div>
+      <div class="win-modal-footer">
+        <button class="win-btn" onclick="closeModal('modalAddUser')">Batal</button>
+        <button class="win-btn win-btn-primary" onclick="submitNewUser()">Simpan Pengguna</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 8: Printable Official Document Preview (Kop Surat & Windows Print) -->
+  <div id="modalPrintDoc" class="win-modal-backdrop">
+    <div class="win-modal" style="max-width:850px; max-height:92vh;">
+      <div class="win-modal-header">
+        <span class="win-modal-title">Pratinjau Dokumen Cetak Resmi</span>
+        <button class="win-caption-btn close" onclick="closeModal('modalPrintDoc')">&#x2715;</button>
+      </div>
+      <div class="win-modal-body" style="background:#ffffff; padding:24px;">
+        <div id="printableDocumentContent" class="printable-document">
+          <!-- Standard Indonesian Corporate Memo / PO Format with Letterhead -->
+        </div>
+      </div>
+      <div class="win-modal-footer">
+        <button class="win-btn" onclick="closeModal('modalPrintDoc')">Tutup</button>
+        <button class="win-btn win-btn-primary" onclick="window.print()">
+          🖨️ Kirim ke Windows Print Dialog (Ctrl+P)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Windows Action Center Toast Notification Container -->
+  <div id="toastContainer" class="win-toast-container"></div>
+
+  <!-- Core JavaScript Application Logic -->
+  <script src="app.js"></script>
+</body>
+</html>

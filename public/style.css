@@ -1,0 +1,1095 @@
+/* ==========================================================================
+   Windows 11 Fluent UI Design System Stylesheet for FlowRequest Pro
+   ========================================================================== */
+
+:root {
+  --win-bg: #f3f3f3;
+  --win-card-bg: #ffffff;
+  --win-surface: #fafafa;
+  --win-accent: #0067c0;
+  --win-accent-hover: #1879cd;
+  --win-accent-active: #005a9e;
+  --win-accent-light: #e0f2fe;
+  --win-text: #1b1b1b;
+  --win-text-secondary: #5f5f5f;
+  --win-text-muted: #8a8a8a;
+  --win-border: #e5e5e5;
+  --win-border-subtle: #eaeaea;
+  --win-titlebar-bg: #ffffff;
+  --win-sidebar-bg: #f8f8f8;
+  --win-danger: #c42b1c;
+  --win-danger-bg: #fde7e9;
+  --win-success: #0f7b0f;
+  --win-success-bg: #dff6dd;
+  --win-warning: #9d5d00;
+  --win-warning-bg: #fff4ce;
+  --win-purple: #5c2d91;
+  --win-purple-bg: #f3e8fd;
+  --win-radius-sm: 4px;
+  --win-radius-md: 6px;
+  --win-radius-lg: 8px;
+  --win-radius-xl: 12px;
+  --win-shadow-elevation: 0 2px 4px rgba(0, 0, 0, 0.04), 0 0 1px rgba(0, 0, 0, 0.12);
+  --win-shadow-flyout: 0 8px 16px rgba(0, 0, 0, 0.14), 0 0 2px rgba(0, 0, 0, 0.12);
+  --win-shadow-modal: 0 20px 40px rgba(0, 0, 0, 0.2), 0 0 4px rgba(0, 0, 0, 0.1);
+  --font-fluent: "Segoe UI Variable Display", "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-mono: "Cascadia Code", "Consolas", monospace;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+}
+
+body {
+  font-family: var(--font-fluent);
+  background-color: var(--win-bg);
+  color: var(--win-text);
+  font-size: 13px;
+  line-height: 1.5;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom Windows Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 5px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.35);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+/* --------------------------------------------------------------------------
+   Windows 11 Custom Title Bar
+   -------------------------------------------------------------------------- */
+.win-titlebar {
+  height: 38px;
+  background: var(--win-titlebar-bg);
+  border-bottom: 1px solid var(--win-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  flex-shrink: 0;
+  z-index: 100;
+}
+
+.win-titlebar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.win-app-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  background: linear-gradient(135deg, #0078d4, #004e8c);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 11px;
+  box-shadow: 0 1px 3px rgba(0, 103, 192, 0.3);
+}
+
+.win-app-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #333;
+  letter-spacing: -0.1px;
+}
+
+.win-app-version-badge {
+  background: #eef2ff;
+  color: #4338ca;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 10px;
+  border: 1px solid #c7d2fe;
+}
+
+.win-titlebar-center {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.win-quick-status {
+  font-size: 11px;
+  color: var(--win-text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.win-status-indicator {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
+}
+
+.win-titlebar-controls {
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.win-caption-btn {
+  width: 44px;
+  height: 38px;
+  border: none;
+  background: transparent;
+  color: #444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 11px;
+  transition: background 0.1s ease;
+}
+
+.win-caption-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.win-caption-btn.close:hover {
+  background: #e81123;
+  color: white;
+}
+
+/* --------------------------------------------------------------------------
+   Role Switcher / Environment Bar
+   -------------------------------------------------------------------------- */
+.win-role-bar {
+  background: #1e293b;
+  color: #f1f5f9;
+  padding: 6px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  border-bottom: 1px solid #334155;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.win-role-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.win-role-pill {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.win-role-select {
+  background: #0f172a;
+  color: #ffffff;
+  border: 1px solid #475569;
+  border-radius: var(--win-radius-sm);
+  padding: 3px 10px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  outline: none;
+  cursor: pointer;
+}
+
+.win-role-select:focus {
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+}
+
+.win-role-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.win-limit-tag {
+  font-size: 11px;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.win-limit-val {
+  color: #38bdf8;
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+
+/* --------------------------------------------------------------------------
+   App Main Layout (Sidebar + Content)
+   -------------------------------------------------------------------------- */
+.win-app-body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.win-sidebar {
+  width: 250px;
+  background: var(--win-sidebar-bg);
+  border-right: 1px solid var(--win-border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow-y: auto;
+}
+
+.win-nav-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--win-text-muted);
+  letter-spacing: 0.5px;
+  padding: 14px 16px 6px;
+}
+
+.win-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  margin: 1px 8px;
+  border-radius: var(--win-radius-md);
+  color: #333333;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.12s ease;
+  position: relative;
+}
+
+.win-nav-item:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.win-nav-item.active {
+  background: #ffffff;
+  color: var(--win-accent);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.win-nav-item.active::before {
+  content: "";
+  position: absolute;
+  left: -8px;
+  top: 6px;
+  bottom: 6px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--win-accent);
+}
+
+.win-nav-icon {
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+
+.win-nav-badge {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.win-nav-badge.alert {
+  background: #f59e0b;
+  color: #ffffff;
+}
+
+.win-nav-badge.danger {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.win-nav-badge.purple {
+  background: #8b5cf6;
+  color: #ffffff;
+}
+
+.win-sidebar-footer {
+  margin-top: auto;
+  padding: 12px 16px;
+  border-top: 1px solid var(--win-border);
+  background: rgba(0, 0, 0, 0.015);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.win-user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #0284c7;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.win-user-info {
+  line-height: 1.2;
+}
+
+.win-user-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--win-text);
+}
+
+.win-user-role {
+  font-size: 10px;
+  color: var(--win-text-secondary);
+}
+
+/* --------------------------------------------------------------------------
+   Content Area & Windows Command Bar
+   -------------------------------------------------------------------------- */
+.win-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--win-bg);
+}
+
+.win-commandbar {
+  background: #ffffff;
+  border-bottom: 1px solid var(--win-border);
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  gap: 12px;
+}
+
+.win-commandbar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.win-page-title-wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.win-page-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #111;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.win-page-sub {
+  font-size: 11px;
+  color: var(--win-text-secondary);
+}
+
+.win-commandbar-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.win-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--win-radius-sm);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--win-border);
+  background: #ffffff;
+  color: var(--win-text);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  transition: all 0.1s ease;
+}
+
+.win-btn:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.win-btn:active {
+  transform: scale(0.98);
+}
+
+.win-btn-primary {
+  background: var(--win-accent);
+  color: #ffffff;
+  border-color: var(--win-accent);
+}
+
+.win-btn-primary:hover {
+  background: var(--win-accent-hover);
+  border-color: var(--win-accent-hover);
+}
+
+.win-btn-success {
+  background: #16a34a;
+  color: #ffffff;
+  border-color: #16a34a;
+}
+
+.win-btn-success:hover {
+  background: #15803d;
+  border-color: #15803d;
+}
+
+.win-btn-danger {
+  background: #dc2626;
+  color: #ffffff;
+  border-color: #dc2626;
+}
+
+.win-btn-danger:hover {
+  background: #b91c1c;
+}
+
+.win-btn-purple {
+  background: #7c3aed;
+  color: #ffffff;
+  border-color: #7c3aed;
+}
+
+.win-btn-purple:hover {
+  background: #6d28d9;
+}
+
+.win-btn-sm {
+  padding: 3px 8px;
+  font-size: 11px;
+}
+
+/* --------------------------------------------------------------------------
+   View Container & Cards
+   -------------------------------------------------------------------------- */
+.win-view-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px;
+}
+
+.win-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.win-card {
+  background: var(--win-card-bg);
+  border: 1px solid var(--win-border);
+  border-radius: var(--win-radius-lg);
+  padding: 14px 16px;
+  box-shadow: var(--win-shadow-elevation);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.win-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.win-kpi-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.win-kpi-label {
+  font-size: 11px;
+  color: var(--win-text-secondary);
+  font-weight: 500;
+}
+
+.win-kpi-val {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--win-text);
+  margin-top: 2px;
+  letter-spacing: -0.5px;
+}
+
+.win-kpi-sub {
+  font-size: 11px;
+  color: var(--win-text-muted);
+  margin-top: 2px;
+}
+
+.win-kpi-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--win-radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  background: #f1f5f9;
+}
+
+/* --------------------------------------------------------------------------
+   Data Table (Fluent Style)
+   -------------------------------------------------------------------------- */
+.win-table-wrap {
+  background: #ffffff;
+  border: 1px solid var(--win-border);
+  border-radius: var(--win-radius-lg);
+  overflow: hidden;
+  box-shadow: var(--win-shadow-elevation);
+  margin-bottom: 16px;
+}
+
+.win-table-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--win-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fafafa;
+}
+
+.win-table-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+table.win-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 12px;
+}
+
+table.win-table th {
+  background: #f8fafc;
+  color: #475569;
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--win-border);
+}
+
+table.win-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--win-border-subtle);
+  color: #1e293b;
+  vertical-align: middle;
+}
+
+table.win-table tr:last-child td {
+  border-bottom: none;
+}
+
+table.win-table tr:hover td {
+  background-color: #f8fafd;
+}
+
+.code-badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--win-accent);
+}
+
+/* Status Badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.badge-draft { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+.badge-gudang { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+.badge-approval { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+.badge-approved { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+.badge-po { background: #f3e8ff; color: #7e22ce; border: 1px solid #e9d5ff; }
+.badge-completed { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+.badge-rejected { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+
+/* --------------------------------------------------------------------------
+   Forms & Inputs
+   -------------------------------------------------------------------------- */
+.win-form-group {
+  margin-bottom: 14px;
+}
+
+.win-label {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 4px;
+}
+
+.win-input, .win-select, .win-textarea {
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: var(--win-radius-sm);
+  border: 1px solid var(--win-border);
+  background: #ffffff;
+  color: var(--win-text);
+  font-family: inherit;
+  font-size: 12px;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.win-input:focus, .win-select:focus, .win-textarea:focus {
+  border-color: var(--win-accent);
+  border-bottom-width: 2px;
+  box-shadow: 0 0 0 2px rgba(0, 103, 192, 0.1);
+}
+
+.win-textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+/* --------------------------------------------------------------------------
+   Dynamic Threshold Escalation Indicator (PR Live Predictor)
+   -------------------------------------------------------------------------- */
+.win-escalation-card {
+  background: linear-gradient(135deg, #eff6ff, #f8fafc);
+  border: 1px solid #bfdbfe;
+  border-radius: var(--win-radius-lg);
+  padding: 14px 16px;
+  margin-top: 12px;
+}
+
+.win-stepper-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+  position: relative;
+}
+
+.win-stepper-wrap::before {
+  content: "";
+  position: absolute;
+  top: 14px;
+  left: 20px;
+  right: 20px;
+  height: 2px;
+  background: #cbd5e1;
+  z-index: 1;
+}
+
+.win-step {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.win-step-circle {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 2px solid #94a3b8;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  transition: all 0.2s ease;
+}
+
+.win-step.active .win-step-circle {
+  border-color: var(--win-accent);
+  background: var(--win-accent);
+  color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(0, 103, 192, 0.2);
+}
+
+.win-step.completed .win-step-circle {
+  border-color: #10b981;
+  background: #10b981;
+  color: #ffffff;
+}
+
+.win-step-title {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #475569;
+  margin-top: 5px;
+}
+
+.win-step-sub {
+  font-size: 9.5px;
+  color: #94a3b8;
+}
+
+/* --------------------------------------------------------------------------
+   Modal / Dialog (Windows Flyout)
+   -------------------------------------------------------------------------- */
+.win-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+  z-index: 200;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.win-modal {
+  background: #ffffff;
+  border: 1px solid var(--win-border);
+  border-radius: var(--win-radius-xl);
+  box-shadow: var(--win-shadow-modal);
+  width: 100%;
+  max-width: 720px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: winModalAppear 0.18s cubic-bezier(0.1, 0.9, 0.2, 1);
+}
+
+@keyframes winModalAppear {
+  from { opacity: 0; transform: scale(0.96) translateY(8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.win-modal-header {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--win-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fafafa;
+}
+
+.win-modal-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.win-modal-body {
+  padding: 16px 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.win-modal-footer {
+  padding: 12px 18px;
+  border-top: 1px solid var(--win-border);
+  background: #fafafa;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* --------------------------------------------------------------------------
+   Toast Notifications (Windows Action Center)
+   -------------------------------------------------------------------------- */
+.win-toast-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 300;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 360px;
+}
+
+.win-toast {
+  background: #ffffff;
+  border: 1px solid var(--win-border);
+  border-left: 4px solid var(--win-accent);
+  border-radius: var(--win-radius-md);
+  padding: 12px 14px;
+  box-shadow: var(--win-shadow-flyout);
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  animation: toastSlideIn 0.2s cubic-bezier(0.1, 0.9, 0.2, 1);
+}
+
+.win-toast.success { border-left-color: #16a34a; }
+.win-toast.danger { border-left-color: #dc2626; }
+.win-toast.warning { border-left-color: #f59e0b; }
+
+@keyframes toastSlideIn {
+  from { opacity: 0; transform: translateX(30px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.win-toast-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.win-toast-msg {
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+/* --------------------------------------------------------------------------
+   Printable Official Documents (Print Dialog Preview)
+   -------------------------------------------------------------------------- */
+@media print {
+  body {
+    background: white !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .win-titlebar, .win-role-bar, .win-sidebar, .win-commandbar, .win-toast-container, .no-print {
+    display: none !important;
+  }
+  .win-content {
+    background: white !important;
+    overflow: visible !important;
+  }
+  .win-view-scroll {
+    padding: 0 !important;
+  }
+  .printable-document {
+    display: block !important;
+    padding: 20mm;
+    color: black;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Windows 11 Fluent UI Login Screen
+   -------------------------------------------------------------------------- */
+.win-login-wrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 50% 20%, #dbeafe 0%, #f1f5f9 60%, #e2e8f0 100%);
+  position: relative;
+  overflow-y: auto;
+  padding: 24px 16px;
+}
+
+.win-login-card {
+  width: 100%;
+  max-width: 440px;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 16px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.1), 0 0 1px rgba(0, 0, 0, 0.15);
+  padding: 32px 30px;
+  display: flex;
+  flex-direction: column;
+  animation: winModalAppear 0.25s cubic-bezier(0.1, 0.9, 0.2, 1);
+}
+
+.win-login-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.win-login-brand-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #0078d4, #004e8c);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 800;
+  font-size: 22px;
+  box-shadow: 0 4px 12px rgba(0, 103, 192, 0.35);
+  margin-bottom: 12px;
+}
+
+.win-login-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.3px;
+}
+
+.win-login-subtitle {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+.win-input-icon-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.win-input-icon {
+  position: absolute;
+  left: 10px;
+  font-size: 14px;
+  color: #64748b;
+  pointer-events: none;
+}
+
+.win-input-with-icon {
+  padding-left: 34px !important;
+  padding-right: 34px !important;
+}
+
+.win-input-toggle-pw {
+  position: absolute;
+  right: 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  color: #64748b;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+.win-input-toggle-pw:hover {
+  color: #0f172a;
+}
+
+.win-login-btn {
+  width: 100%;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 6px;
+  justify-content: center;
+  margin-top: 8px;
+  background: var(--win-accent);
+  color: white;
+  border: 1px solid var(--win-accent);
+  box-shadow: 0 2px 6px rgba(0, 103, 192, 0.3);
+}
+
+.win-login-btn:hover {
+  background: var(--win-accent-hover);
+}
+
+.win-quick-login-section {
+  margin-top: 24px;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 18px;
+}
+
+.win-quick-login-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #64748b;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.win-quick-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.win-quick-chip {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 11px;
+  color: #1e293b;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.12s ease;
+}
+
+.win-quick-chip:hover {
+  background: #e0f2fe;
+  border-color: #38bdf8;
+  color: #0369a1;
+  transform: translateY(-1px);
+}
+
+.win-login-footer-text {
+  font-size: 10.5px;
+  color: #94a3b8;
+  text-align: center;
+  margin-top: 20px;
+  line-height: 1.4;
+}

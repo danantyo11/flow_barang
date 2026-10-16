@@ -1,0 +1,26 @@
+{
+  "name": "flowrequest-barang",
+  "version": "1.0.0",
+  "description": "Aplikasi Permohonan Barang (Goods Request System) berbasis Role-Based Access Control (RBAC) dan Dynamic Threshold Routing dengan Tampilan Windows Desktop Fluent UI.",
+  "main": "desktop-launcher.js",
+  "scripts": {
+    "start": "node desktop-launcher.js",
+    "app": "node desktop-launcher.js",
+    "server": "node server.js",
+    "seed": "node data/seed.js"
+  },
+  "keywords": [
+    "goods-request",
+    "purchase-order",
+    "rbac",
+    "dynamic-threshold",
+    "windows-app",
+    "fluent-ui"
+  ],
+  "author": "FlowRequest Team",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2"
+  }
+}
