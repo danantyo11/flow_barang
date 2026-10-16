@@ -550,13 +550,13 @@
       "required_date": "2026-10-23",
       "purpose": "KEBUTUHAN RUTIN",
       "urgency": "NORMAL",
-      "status": "PENDING_APPROVAL",
+      "status": "COMPLETED",
       "total_estimated_amount": 1720000,
       "total_need_purchase_amount": 1720000,
-      "current_approval_level": 3,
-      "final_approver_id": null,
-      "final_approver_name": null,
-      "approved_at": null,
+      "current_approval_level": null,
+      "final_approver_id": 4,
+      "final_approver_name": "Budi Santoso (Supervisor)",
+      "approved_at": "2026-10-16T08:55:19.125Z",
       "items": [
         {
           "id": 1,
@@ -620,6 +620,43 @@
           "total_price": 1500000
         }
       ]
+    },
+    {
+      "id": 2,
+      "po_number": "PO-202610-002",
+      "request_id": 5,
+      "pr_number": "PR-202610-005",
+      "purchasing_user_id": 10,
+      "purchasing_user_name": "Maya Sartika",
+      "vendor_id": 2,
+      "vendor_name": "CV Mitra Usaha Solusindo",
+      "vendor_phone": "031-8941234",
+      "vendor_address": "Jl. Pemuda No. 45, Surabaya",
+      "po_date": "2026-10-16",
+      "delivery_date": "2026-10-23",
+      "payment_terms": "Net 30 Days",
+      "subtotal": 1720000,
+      "tax_rate": 11,
+      "tax_amount": 189200,
+      "grand_total": 1909200,
+      "status": "COMPLETED",
+      "approved_by_user_id": 10,
+      "approved_by_name": "Maya Sartika (Purchasing (Pengadaan))",
+      "approved_at": "2026-10-16T08:58:00.089Z",
+      "po_approval_notes": "Disetujui untuk diterbitkan ke vendor rekanan.",
+      "released_at": "2026-10-16T08:58:25.022Z",
+      "items": [
+        {
+          "id": 1,
+          "request_item_id": 1,
+          "item_name": "SODIUM HIGLOFENAT",
+          "specification": "SMB",
+          "qty": 8,
+          "unit": "Pcs",
+          "unit_price": 215000,
+          "total_price": 1720000
+        }
+      ]
     }
   ],
   "goods_receipts": [
@@ -662,9 +699,205 @@
           "item_condition_notes": ""
         }
       ]
+    },
+    {
+      "id": 2,
+      "receipt_number": "GR-202610-002",
+      "po_id": 2,
+      "po_number": "PO-202610-002",
+      "vendor_name": "CV Mitra Usaha Solusindo",
+      "warehouse_user_id": 3,
+      "warehouse_user_name": "Joko Susilo",
+      "vendor_delivery_note_number": "JS4567887",
+      "received_date": "2026-10-16T09:06:00.219Z",
+      "status": "RECEIVED_COMPLETED",
+      "receiving_notes": "Menunggu kedatangan fisik barang dari vendor CV Mitra Usaha Solusindo sesuai pesanan PO-202610-002.",
+      "created_at": "2026-10-16T08:58:25.022Z",
+      "items": [
+        {
+          "id": 1,
+          "goods_receipt_id": 2,
+          "po_item_id": 1,
+          "item_name": "SODIUM HIGLOFENAT",
+          "qty_ordered": 8,
+          "qty_received": 8,
+          "qty_accepted": 8,
+          "qty_rejected": 0,
+          "warehouse_bin_location": "RACK-A-01",
+          "item_condition_notes": "Kondisi barang baik & segel utuh"
+        }
+      ]
     }
   ],
   "approval_logs": [
+    {
+      "id": 40,
+      "timestamp": "2026-10-16T09:07:02.350Z",
+      "document_type": "AUTH",
+      "document_number": "AUTH-10",
+      "actor_name": "Maya Sartika",
+      "actor_role": "Purchasing (Pengadaan) (L9)",
+      "action": "USER_LOGOUT",
+      "previous_status": "LOGGED_IN",
+      "new_status": "LOGGED_OUT",
+      "notes": "Pengguna Maya Sartika keluar dari sistem."
+    },
+    {
+      "id": 39,
+      "timestamp": "2026-10-16T09:06:57.641Z",
+      "document_type": "AUTH",
+      "document_number": "AUTH-10",
+      "actor_name": "Maya Sartika",
+      "actor_role": "Purchasing (Pengadaan) (L9)",
+      "action": "USER_LOGIN",
+      "previous_status": "-",
+      "new_status": "LOGGED_IN",
+      "notes": "Pengguna Maya Sartika (Purchasing (Pengadaan)) berhasil login ke sistem."
+    },
+    {
+      "id": 38,
+      "timestamp": "2026-10-16T09:06:53.228Z",
+      "document_type": "AUTH",
+      "document_number": "AUTH-10",
+      "actor_name": "Maya Sartika",
+      "actor_role": "Purchasing (Pengadaan) (L9)",
+      "action": "USER_LOGOUT",
+      "previous_status": "LOGGED_IN",
+      "new_status": "LOGGED_OUT",
+      "notes": "Pengguna Maya Sartika keluar dari sistem."
+    },
+    {
+      "id": 37,
+      "timestamp": "2026-10-16T09:06:16.066Z",
+      "document_type": "AUTH",
+      "document_number": "AUTH-10",
+      "actor_name": "Maya Sartika",
+      "actor_role": "Purchasing (Pengadaan) (L9)",
+      "action": "USER_LOGIN",
+      "previous_status": "-",
+      "new_status": "LOGGED_IN",
+      "notes": "Pengguna Maya Sartika (Purchasing (Pengadaan)) berhasil login ke sistem."
+    },
+    {
+      "id": 36,
+      "timestamp": "2026-10-16T09:06:13.086Z",
+      "document_type": "AUTH",
+      "document_number": "AUTH-3",
+      "actor_name": "Joko Susilo",
+      "actor_role": "Gudang (Stock Verifier & QC) (L2)",
+      "action": "USER_LOGOUT",
+      "previous_status": "LOGGED_IN",
+      "new_status": "LOGGED_OUT",
+      "notes": "Pengguna Joko Susilo keluar dari sistem."
+    },
+    {
+      "id": 35,
+      "timestamp": "2026-10-16T09:06:00.219Z",
+      "document_type": "GR",
+      "document_number": "GR-202610-002",
+      "actor_name": "Joko Susilo",
+      "actor_role": "Gudang (Stock Verifier & QC) (L2)",
+      "action": "GOODS_RECEIVED",
+      "previous_status": "WAITING_RECEIPT",
+      "new_status": "RECEIVED_COMPLETED",
+      "notes": "Barang fisik diverifikasi oleh Joko Susilo dengan Surat Jalan vendor: JS4567887. Status: RECEIVED_COMPLETED."
+    },
+    {
+      "id": 34,
+      "timestamp": "2026-10-16T09:05:19.846Z",
+      "document_type": "AUTH",
+      "document_number": "AUTH-3",
+      "actor_name": "Joko Susilo",
+      "actor_role": "Gudang (Stock Verifier & QC) (L2)",
+      "action": "USER_LOGIN",
+      "previous_status": "-",
+      "new_status": "LOGGED_IN",
+      "notes": "Pengguna Joko Susilo (Gudang (Stock Verifier & QC)) berhasil login ke sistem."
+    },
+    {
+      "id": 33,
+      "timestamp": "2026-10-16T08:58:25.022Z",
+      "document_type": "PO",
+      "document_number": "PO-202610-002",
+      "actor_name": "Maya Sartika",
+      "actor_role": "Purchasing (Pengadaan) (L9)",
+      "action": "RELEASE_PO_AND_AUTO_GENERATE_GR",
+      "previous_status": "APPROVED",
+      "new_status": "RELEASED_TO_VENDOR",
+      "notes": "PO diterbitkan ke vendor CV Mitra Usaha Solusindo. Tiket penerimaan barang GR-202610-002 OTOMATIS diterbitkan ke dashboard staf Gudang."
+    },
+    {
+      "id": 32,
+      "timestamp": "2026-10-16T08:58:00.089Z",
+      "document_type": "PO",
+      "document_number": "PO-202610-002",
+      "actor_name": "Maya Sartika",
+      "actor_role": "Purchasing (Pengadaan) (L9)",
+      "action": "APPROVE_PO",
+      "previous_status": "WAITING_PO_APPROVAL",
+      "new_status": "APPROVED",
+      "notes": "PO disetujui oleh Maya Sartika (Purchasing (Pengadaan) Level 9). Catatan: Disetujui untuk diterbitkan ke vendor rekanan."
+    },
+    {
+      "id": 31,
+      "timestamp": "2026-10-16T08:57:42.582Z",
+      "document_type": "PO",
+      "document_number": "PO-202610-002",
+      "actor_name": "Maya Sartika",
+      "actor_role": "Purchasing (Pengadaan) (L9)",
+      "action": "CREATE_DRAFT_PO",
+      "previous_status": "PR APPROVED",
+      "new_status": "WAITING_PO_APPROVAL",
+      "notes": "Draft PO dibuat untuk vendor CV Mitra Usaha Solusindo. Total: Rp 1.909.200 (termasuk PPN 11%). Menunggu otorisasi Manager (Level 6+)."
+    },
+    {
+      "id": 30,
+      "timestamp": "2026-10-16T08:55:34.510Z",
+      "document_type": "AUTH",
+      "document_number": "AUTH-10",
+      "actor_name": "Maya Sartika",
+      "actor_role": "Purchasing (Pengadaan) (L9)",
+      "action": "USER_LOGIN",
+      "previous_status": "-",
+      "new_status": "LOGGED_IN",
+      "notes": "Pengguna Maya Sartika (Purchasing (Pengadaan)) berhasil login ke sistem."
+    },
+    {
+      "id": 29,
+      "timestamp": "2026-10-16T08:55:30.008Z",
+      "document_type": "AUTH",
+      "document_number": "AUTH-4",
+      "actor_name": "Budi Santoso",
+      "actor_role": "Supervisor (L3)",
+      "action": "USER_LOGOUT",
+      "previous_status": "LOGGED_IN",
+      "new_status": "LOGGED_OUT",
+      "notes": "Pengguna Budi Santoso keluar dari sistem."
+    },
+    {
+      "id": 28,
+      "timestamp": "2026-10-16T08:55:19.215Z",
+      "document_type": "PR",
+      "document_number": "PR-202610-005",
+      "actor_name": "Budi Santoso",
+      "actor_role": "Supervisor (L3)",
+      "action": "APPROVE_PR_FINAL",
+      "previous_status": "PENDING_APPROVAL (L3)",
+      "new_status": "APPROVED",
+      "notes": "PR disetujui secara final oleh Budi Santoso. Nilai Rp 1.720.000 berada dalam limit wewenang. Dokumen siap diproses Purchasing."
+    },
+    {
+      "id": 27,
+      "timestamp": "2026-10-16T08:54:43.700Z",
+      "document_type": "AUTH",
+      "document_number": "AUTH-4",
+      "actor_name": "Budi Santoso",
+      "actor_role": "Supervisor (L3)",
+      "action": "USER_LOGIN",
+      "previous_status": "-",
+      "new_status": "LOGGED_IN",
+      "notes": "Pengguna Budi Santoso (Supervisor) berhasil login ke sistem."
+    },
     {
       "id": 26,
       "timestamp": "2026-10-16T08:32:39.499Z",
