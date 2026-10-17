@@ -5,7 +5,44 @@
 
 const API_BASE = '';
 
+// Interceptor otomatis untuk melampirkan JWT Token ke seluruh request API
+const nativeFetch = window.fetch;
+window.fetch = function(url, options = {}) {
+  const token = localStorage.getItem('flowrequest_jwt_token');
+  if (token && typeof url === 'string' && (url.startsWith('/api') || url.includes('/api/'))) {
+    options.headers = options.headers || {};
+    if (options.headers instanceof Headers) {
+      if (!options.headers.has('Authorization')) {
+        options.headers.set('Authorization', `Bearer ${token}`);
+      }
+    } else if (Array.isArray(options.headers)) {
+      options.headers.push(['Authorization', `Bearer ${token}`]);
+    } else {
+      if (!options.headers['Authorization'] && !options.headers['authorization']) {
+        options.headers['Authorization'] = `Bearer ${token}`;
+      }
+    }
+  }
+  return nativeFetch(url, options).then(response => {
+    // Tangani sesi kedaluwarsa secara otomatis
+    if (response.status === 401 && typeof url === 'string' && !url.includes('/api/auth/login')) {
+      console.warn('[JWT Auth] Sesi telah kedaluwarsa atau token tidak valid. Menghapus token lokal...');
+      localStorage.removeItem('flowrequest_jwt_token');
+      if (state.currentUser) {
+        state.currentUser = null;
+        updateCurrentUserUI();
+        if (typeof showToast === 'function') {
+          showToast('Sesi Berakhir', 'Sesi login telah kedaluwarsa. Silakan masuk kembali.', 'warning');
+        }
+      }
+    }
+    return response;
+  });
+};
+
+
 // Application State
+
 let state = {
   currentUser: null,
   activeView: 'dashboard',
@@ -21,7 +58,8 @@ let state = {
   auditLogs: [],
   selectedPR: null,
   selectedPO: null,
-  selectedGR: null
+  selectedGR: null,
+  gudangTaskFilter: 'ALL'
 };
 
 // ============================================================================
@@ -33,13 +71,22 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadInitialState();
   initPRFormDefaults();
   setupKeyboardShortcuts();
+  setupGudangClock();
 });
 
 async function loadInitialState() {
   try {
     await fetchCurrentUser();
-    await refreshAllData();
-    renderCurrentView();
+    if (state.currentUser) {
+      await refreshAllData();
+      if (state.currentUser.role_level === 2 || state.currentUser.username === 'joko_gudang') {
+        switchView('gudang-dashboard');
+      } else {
+        renderCurrentView();
+      }
+    } else {
+      updateCurrentUserUI();
+    }
   } catch (err) {
     console.error('Initialization error:', err);
     showToast('Koneksi Gagal', 'Gagal memuat data dari backend lokal.', 'danger');
@@ -47,13 +94,35 @@ async function loadInitialState() {
 }
 
 async function fetchCurrentUser() {
-  const res = await fetch(`${API_BASE}/api/auth/current`);
-  const json = await res.json();
-  if (json.success) {
-    state.currentUser = json.data;
+  const token = localStorage.getItem('flowrequest_jwt_token');
+  if (!token) {
+    state.currentUser = null;
     updateCurrentUserUI();
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/api/auth/current`);
+    if (res.status === 401) {
+      localStorage.removeItem('flowrequest_jwt_token');
+      state.currentUser = null;
+      updateCurrentUserUI();
+      return;
+    }
+    const json = await res.json();
+    if (json.success && json.data) {
+      state.currentUser = json.data;
+      updateCurrentUserUI();
+    } else {
+      localStorage.removeItem('flowrequest_jwt_token');
+      state.currentUser = null;
+      updateCurrentUserUI();
+    }
+  } catch (err) {
+    console.warn('Gagal memverifikasi token sesi aktif:', err);
   }
 }
+
 
 async function refreshAllData() {
   const [statsRes, prRes, poRes, grRes, limitsRes, usersRes, vendorsRes, logsRes] = await Promise.all([
@@ -182,14 +251,22 @@ async function handleLoginSubmit(event) {
     const json = await res.json();
     if (json.success) {
       state.currentUser = json.data;
+      if (json.token) {
+        localStorage.setItem('flowrequest_jwt_token', json.token);
+      }
       if (remember) {
         localStorage.setItem('flowrequest_saved_user', username);
       } else {
         localStorage.removeItem('flowrequest_saved_user');
       }
+
       updateCurrentUserUI();
       await refreshAllData();
-      renderCurrentView();
+      if (json.data.role_level === 2 || json.data.username === 'joko_gudang') {
+        switchView('gudang-dashboard');
+      } else {
+        renderCurrentView();
+      }
       showToast('Login Berhasil', json.message, 'success');
     } else {
       if (errBox) {
@@ -225,7 +302,9 @@ async function executeLogout() {
   try {
     await fetch(`${API_BASE}/api/auth/logout`, { method: 'POST' });
     state.currentUser = null;
+    localStorage.removeItem('flowrequest_jwt_token');
     updateCurrentUserUI();
+
     const pwInput = document.getElementById('loginPassword');
     if (pwInput) pwInput.value = '';
     const errBox = document.getElementById('loginErrorBox');
@@ -248,29 +327,74 @@ function updateBadgeCounts() {
 
   // Gudang queue (PR status SUBMITTED_TO_GUDANG)
   const gudangCount = state.requests.filter(r => r.status === 'SUBMITTED_TO_GUDANG').length;
-  document.getElementById('badgeGudangQueue').textContent = gudangCount;
+  const badgeGudangQueueEl = document.getElementById('badgeGudangQueue');
+  if (badgeGudangQueueEl) badgeGudangQueueEl.textContent = gudangCount;
 
-  // Goods receipt queue (GR status WAITING_RECEIPT)
-  const grCount = state.goodsReceipts.filter(g => g.status === 'WAITING_RECEIPT').length;
-  document.getElementById('badgeGRQueue').textContent = grCount;
+  // Goods receipt queue (GR status WAITING_RECEIPT or PARTIALLY_RECEIVED)
+  const grCount = state.goodsReceipts.filter(g => g.status === 'WAITING_RECEIPT' || g.status === 'PARTIALLY_RECEIVED').length;
+  const badgeGRQueueEl = document.getElementById('badgeGRQueue');
+  if (badgeGRQueueEl) badgeGRQueueEl.textContent = grCount;
+
+  // Total warehouse tasks badge (Cek PR + DO)
+  const badgeTotalTasksEl = document.getElementById('badgeGudangTotalTasks');
+  if (badgeTotalTasksEl) badgeTotalTasksEl.textContent = gudangCount + grCount;
+
+  // Fulfilled and Completed counts
+  const fulfilledCount = state.requests.filter(r => r.status === 'FULFILLED_BY_STOCK').length;
+  const grCompletedCount = state.goodsReceipts.filter(g => g.status === 'RECEIVED_COMPLETED').length;
+  const completedPRCount = state.requests.filter(r => r.status === 'COMPLETED').length;
+  const totalCompletedCount = grCompletedCount + completedPRCount;
+
+  // Warehouse Action Card Badges
+  const cardDOBadge = document.getElementById('whCardDOBadge');
+  if (cardDOBadge) cardDOBadge.textContent = `${grCount} Menunggu`;
+  const cardPRBadge = document.getElementById('whCardPRBadge');
+  if (cardPRBadge) cardPRBadge.textContent = `${gudangCount} Antrean`;
+  const cardFulfilledBadge = document.getElementById('whCardFulfilledBadge');
+  if (cardFulfilledBadge) cardFulfilledBadge.textContent = `${fulfilledCount} Terpenuhi`;
+  const cardCompletedBadge = document.getElementById('whCardCompletedBadge');
+  if (cardCompletedBadge) cardCompletedBadge.textContent = `${totalCompletedCount} Tuntas`;
+
+  // Warehouse KPI Card Numbers
+  const kpiPRQ = document.getElementById('whKpiPRQueue');
+  if (kpiPRQ) kpiPRQ.textContent = gudangCount;
+  const kpiGRQ = document.getElementById('whKpiGRQueue');
+  if (kpiGRQ) kpiGRQ.textContent = grCount;
+  const kpiFulfilled = document.getElementById('whKpiFulfilled');
+  if (kpiFulfilled) kpiFulfilled.textContent = fulfilledCount;
+  const kpiCompletedWh = document.getElementById('whKpiCompleted');
+  if (kpiCompletedWh) kpiCompletedWh.textContent = totalCompletedCount;
+
+  // Warehouse Hero Banner staff info
+  const staffNameEl = document.getElementById('whHeroStaffName');
+  if (staffNameEl && u) {
+    staffNameEl.textContent = `${u.full_name} (${u.role_name})`;
+  }
 
   // Approver PR queue for current user's level
   const approverCount = state.requests.filter(r => r.status === 'PENDING_APPROVAL' && r.current_approval_level === u.role_level).length;
-  document.getElementById('badgeApproverQueue').textContent = approverCount;
+  const badgeApproverQueueEl = document.getElementById('badgeApproverQueue');
+  if (badgeApproverQueueEl) badgeApproverQueueEl.textContent = approverCount;
 
   // PO queue waiting approval
   const poCount = state.purchaseOrders.filter(p => p.status === 'WAITING_PO_APPROVAL').length;
-  document.getElementById('badgePOQueue').textContent = poCount;
+  const badgePOQueueEl = document.getElementById('badgePOQueue');
+  if (badgePOQueueEl) badgePOQueueEl.textContent = poCount;
 
   // Purchasing PR Pool (APPROVED)
   const poolCount = state.requests.filter(r => r.status === 'APPROVED').length;
-  document.getElementById('badgePurchasingQueue').textContent = poolCount;
+  const badgePurchasingQueueEl = document.getElementById('badgePurchasingQueue');
+  if (badgePurchasingQueueEl) badgePurchasingQueueEl.textContent = poolCount;
 
   // Dashboard KPI numbers
-  document.getElementById('kpiTotalPR').textContent = state.requests.length;
-  document.getElementById('kpiInWarehouse').textContent = gudangCount;
-  document.getElementById('kpiMyAction').textContent = approverCount;
-  document.getElementById('kpiCompleted').textContent = state.requests.filter(r => r.status === 'COMPLETED').length;
+  const kpiTotalPREl = document.getElementById('kpiTotalPR');
+  if (kpiTotalPREl) kpiTotalPREl.textContent = state.requests.length;
+  const kpiInWarehouseEl = document.getElementById('kpiInWarehouse');
+  if (kpiInWarehouseEl) kpiInWarehouseEl.textContent = gudangCount;
+  const kpiMyActionEl = document.getElementById('kpiMyAction');
+  if (kpiMyActionEl) kpiMyActionEl.textContent = approverCount;
+  const kpiCompletedEl = document.getElementById('kpiCompleted');
+  if (kpiCompletedEl) kpiCompletedEl.textContent = completedPRCount;
 }
 
 // ============================================================================
@@ -286,10 +410,18 @@ async function handleRoleChange(userId) {
     });
     const json = await res.json();
     if (json.success) {
+      if (json.token) {
+        localStorage.setItem('flowrequest_jwt_token', json.token);
+      }
       state.currentUser = json.data;
+
       updateCurrentUserUI();
       await refreshAllData();
-      renderCurrentView();
+      if (json.data.role_level === 2 || json.data.username === 'joko_gudang') {
+        switchView('gudang-dashboard');
+      } else {
+        renderCurrentView();
+      }
       showToast('Peran Berubah', `Aktif sebagai: ${json.data.full_name} (${json.data.role_name})`, 'success');
     }
   } catch (err) {
@@ -313,6 +445,7 @@ function switchView(viewName) {
   // Map view name to element and nav item
   const pageMap = {
     'dashboard': { id: 'view-dashboard', title: '📊 Dashboard Beranda', sub: 'Ringkasan status permohonan, alur pengadaan, dan metrik sistem' },
+    'gudang-dashboard': { id: 'view-gudang-dashboard', title: '🏭 Pusat Operasional Gudang & Logistik', sub: 'Monitoring stok rak fisik, antrean form PR, dan penerimaan surat jalan DO vendor' },
     'create-pr': { id: 'view-create-pr', title: '📝 Formulir Permohonan Pengadaan Barang (PR)', sub: 'Isi formulir kebutuhan barang dan estimasi anggaran pengadaan' },
     'my-pr': { id: 'view-my-pr', title: '📋 Riwayat Permohonan Saya', sub: 'Daftar dan status dokumen pengadaan yang Anda ajukan' },
     'gudang-verify': { id: 'view-gudang-verify', title: '📦 Verifikasi Fisik Ketersediaan Stok Gudang', sub: 'Pemeriksaan rak barang eksisting sebelum dokumen diteruskan ke pimpinan' },
@@ -347,6 +480,9 @@ function renderCurrentView() {
   switch (state.activeView) {
     case 'dashboard':
       renderDashboardTable();
+      break;
+    case 'gudang-dashboard':
+      renderGudangDashboard();
       break;
     case 'my-pr':
       renderMyPRTable();
@@ -694,6 +830,175 @@ function renderMyPRTable() {
 }
 
 // ============================================================================
+// ============================================================================
+// VIEW: DASHBOARD GUDANG (CLONED FROM e:\gudang WORKFLOW TEMPLATE)
+// ============================================================================
+
+function setupGudangClock() {
+  function updateClock() {
+    const el = document.getElementById('whLiveClock');
+    if (!el) return;
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('id-ID', { hour12: false }) + ' WIB';
+    el.textContent = timeStr;
+  }
+  updateClock();
+  setInterval(updateClock, 1000);
+}
+
+function renderGudangDashboard() {
+  const tbody = document.getElementById('whPriorityTasksTableBody');
+  const countBadge = document.getElementById('whTaskCountBadge');
+  if (!tbody) return;
+
+  const currentFilter = state.gudangTaskFilter || 'ALL';
+
+  // Build combined priority tasks list
+  const tasks = [];
+
+  // 1. Pending PRs awaiting warehouse rack check (Fase 1)
+  const pendingPRs = state.requests.filter(r => r.status === 'SUBMITTED_TO_GUDANG');
+  pendingPRs.forEach(pr => {
+    tasks.push({
+      type: 'PR_CHECK',
+      typeLabel: '📦 Cek Stok PR',
+      typeBadgeClass: 'badge badge-gudang',
+      id: pr.id,
+      docNumber: `<span class="code-badge">${pr.pr_number}</span>`,
+      date: pr.request_date,
+      party: `<strong>${pr.requestor_name}</strong><br><small style="color:#64748b;">${pr.department_name}</small>`,
+      details: `<strong>${pr.items.length} Macam Barang</strong><div style="font-size:11px; color:#475569; max-width:240px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${pr.purpose}</div>`,
+      status: pr.status,
+      actionHtml: `
+        <button class="win-btn win-btn-sm win-btn-primary" onclick="showGudangVerifyModal(${pr.id})">
+          🔍 Cek Fisik Rak
+        </button>
+      `
+    });
+  });
+
+  // 2. Goods Receipts waiting delivery order / physical receiving (Fase 3)
+  const pendingGRs = state.goodsReceipts.filter(g => g.status === 'WAITING_RECEIPT' || g.status === 'PARTIALLY_RECEIVED');
+  pendingGRs.forEach(gr => {
+    tasks.push({
+      type: 'DO_RECEIPT',
+      typeLabel: '🚚 Penerimaan DO',
+      typeBadgeClass: 'badge badge-warning',
+      id: gr.id,
+      docNumber: `<span class="code-badge">${gr.receipt_number}</span><br><small style="color:#64748b;">Ref PO: ${gr.po_number}</small>`,
+      date: gr.created_at ? gr.created_at.slice(0, 10) : '-',
+      party: `<strong>${gr.vendor_name}</strong>`,
+      details: `<strong>${gr.items ? gr.items.length : 1} Macam Barang</strong><div style="font-size:11px; color:#475569;">Surat Jalan: ${gr.vendor_delivery_note_number || '<em style="color:#94a3b8;">Menunggu Vendor</em>'}</div>`,
+      status: gr.status,
+      actionHtml: `
+        <button class="win-btn win-btn-sm win-btn-success" onclick="showProcessGRModal(${gr.id})">
+          🚚 Catat DO & QC
+        </button>
+      `
+    });
+  });
+
+  // 3. Fulfilled by stock PRs (Fase 1 Selesai dari stok internal)
+  const fulfilledPRs = state.requests.filter(r => r.status === 'FULFILLED_BY_STOCK');
+  fulfilledPRs.forEach(pr => {
+    tasks.push({
+      type: 'FULFILLED',
+      typeLabel: '✅ Stok Rak Lengkap',
+      typeBadgeClass: 'badge badge-completed',
+      id: pr.id,
+      docNumber: `<span class="code-badge">${pr.pr_number}</span>`,
+      date: pr.request_date,
+      party: `<strong>${pr.requestor_name}</strong><br><small style="color:#64748b;">${pr.department_name}</small>`,
+      details: `<span style="color:#15803d; font-weight:600;">Terpenuhi 100% dari stok rak internal</span><div style="font-size:11px; color:#64748b;">Siap diserahterimakan ke pemohon</div>`,
+      status: pr.status,
+      actionHtml: `
+        <button class="win-btn win-btn-sm" onclick="showPRDetailModal(${pr.id})">
+          👁️ Detail PR
+        </button>
+      `
+    });
+  });
+
+  // 4. Completed Goods Receipts (Fase 3 Selesai QC dan Masuk Rak)
+  const completedGRs = state.goodsReceipts.filter(g => g.status === 'RECEIVED_COMPLETED');
+  completedGRs.forEach(gr => {
+    tasks.push({
+      type: 'COMPLETED',
+      typeLabel: '🏁 QC & Rak Selesai',
+      typeBadgeClass: 'badge badge-completed',
+      id: gr.id,
+      docNumber: `<span class="code-badge">${gr.receipt_number}</span><br><small style="color:#64748b;">PO: ${gr.po_number}</small>`,
+      date: gr.created_at ? gr.created_at.slice(0, 10) : '-',
+      party: `<strong>${gr.vendor_name}</strong>`,
+      details: `Surat Jalan: <strong>${gr.vendor_delivery_note_number || '-'}</strong><div style="font-size:11px; color:#15803d;">Barang tersimpan di rak penyimpanan</div>`,
+      status: gr.status,
+      actionHtml: `
+        <button class="win-btn win-btn-sm" onclick="showOfficialPrintModal(${gr.purchase_order_id}, 'PO')">
+          🖨️ Cetak Bukti
+        </button>
+      `
+    });
+  });
+
+  // Filter tasks based on currentFilter
+  let filtered = tasks;
+  if (currentFilter === 'PR') {
+    filtered = tasks.filter(t => t.type === 'PR_CHECK');
+  } else if (currentFilter === 'DO') {
+    filtered = tasks.filter(t => t.type === 'DO_RECEIPT');
+  } else if (currentFilter === 'DONE') {
+    filtered = tasks.filter(t => t.type === 'FULFILLED' || t.type === 'COMPLETED');
+  } else if (currentFilter === 'FULFILLED') {
+    filtered = tasks.filter(t => t.type === 'FULFILLED');
+  } else if (currentFilter === 'COMPLETED') {
+    filtered = tasks.filter(t => t.type === 'COMPLETED');
+  }
+
+  if (countBadge) {
+    countBadge.textContent = `${filtered.length} Tugas`;
+  }
+
+  // Update filter buttons styling
+  const filterBtns = {
+    'ALL': document.getElementById('btnFilterAllTasks'),
+    'PR': document.getElementById('btnFilterPRTasks'),
+    'DO': document.getElementById('btnFilterDOTasks'),
+    'DONE': document.getElementById('btnFilterDoneTasks')
+  };
+
+  Object.entries(filterBtns).forEach(([key, btn]) => {
+    if (!btn) return;
+    if (key === currentFilter || (currentFilter === 'ALL' && key === 'ALL')) {
+      btn.classList.add('win-btn-primary');
+    } else {
+      btn.classList.remove('win-btn-primary');
+    }
+  });
+
+  if (!filtered.length) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:24px; color:#64748b;">Tidak ada tugas pada filter "${currentFilter}". Operasional gudang berjalan optimal.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(t => `
+    <tr>
+      <td><span class="${t.typeBadgeClass}">${t.typeLabel}</span></td>
+      <td>${t.docNumber}</td>
+      <td>${t.date}</td>
+      <td>${t.party}</td>
+      <td>${t.details}</td>
+      <td>${getStatusBadge(t.status)}</td>
+      <td style="text-align:right;">${t.actionHtml}</td>
+    </tr>
+  `).join('');
+}
+
+function filterGudangTasks(filterType) {
+  state.gudangTaskFilter = filterType;
+  renderGudangDashboard();
+}
+
+// ============================================================================
 // VIEW 4: GUDANG STOCK VERIFICATION
 // ============================================================================
 
@@ -778,7 +1083,32 @@ function recalcGudangRow(input, requestedQty) {
   const stock = Number(input.value) || 0;
   const tr = input.closest('tr');
   const buyQty = Math.max(0, requestedQty - stock);
-  tr.querySelector('.g-buy-val').textContent = `${buyQty} Pcs`;
+  const buyEl = tr.querySelector('.g-buy-val');
+  if (buyEl) {
+    buyEl.textContent = `${buyQty} Pcs`;
+    buyEl.style.color = buyQty === 0 ? '#15803d' : '#dc2626';
+  }
+}
+
+function quickFillGudangStock(mode) {
+  const container = document.getElementById('gudangModalItemsContainer');
+  if (!container || !state.selectedPR) return;
+
+  const rows = container.querySelectorAll('tbody tr');
+  rows.forEach(tr => {
+    const itemId = Number(tr.getAttribute('data-item-id'));
+    const item = state.selectedPR.items.find(i => i.id === itemId);
+    const stockInput = tr.querySelector('.g-stock-val');
+    if (!stockInput || !item) return;
+
+    if (mode === 'all') {
+      stockInput.value = item.qty_requested;
+    } else {
+      stockInput.value = 0;
+    }
+    recalcGudangRow(stockInput, item.qty_requested);
+  });
+  showToast('Pengisian Cepat', mode === 'all' ? 'Seluruh barang diisi penuh dari ketersediaan rak.' : 'Seluruh stok diisi 0 (perlu dibeli via PO).', 'info');
 }
 
 async function submitGudangVerification() {
@@ -1415,7 +1745,10 @@ function showProcessGRModal(grId) {
     </div>
 
     <div class="win-table-wrap">
-      <div class="win-table-header"><span class="win-table-title">Verifikasi Kuantitas Masuk & Quality Control (QC)</span></div>
+      <div class="win-table-header" style="display:flex; justify-content:space-between; align-items:center;">
+        <span class="win-table-title">Verifikasi Kuantitas Masuk & Quality Control (QC)</span>
+        <button type="button" class="checker-quick-fill-btn" onclick="quickFillGRPassQC()">⚡ Loloskan QC 100% (Semua Baik)</button>
+      </div>
       <table class="win-table">
         <thead>
           <tr>
@@ -1444,6 +1777,27 @@ function showProcessGRModal(grId) {
   `;
 
   openModal('modalProcessGR');
+}
+
+function quickFillGRPassQC() {
+  const container = document.getElementById('grItemsInputBody');
+  if (!container || !state.selectedGR) return;
+
+  const rows = container.querySelectorAll('tr');
+  rows.forEach(tr => {
+    const itemId = Number(tr.getAttribute('data-item-id'));
+    const item = state.selectedGR.items.find(i => i.id === itemId);
+    if (!item) return;
+
+    const recInput = tr.querySelector('.gr-received');
+    const accInput = tr.querySelector('.gr-accepted');
+    const rejInput = tr.querySelector('.gr-rejected');
+
+    if (recInput) recInput.value = item.qty_ordered;
+    if (accInput) accInput.value = item.qty_ordered;
+    if (rejInput) rejInput.value = 0;
+  });
+  showToast('QC Otomatis', 'Kuantitas disetel 100% diterima baik dan lolos uji fisik.', 'info');
 }
 
 async function submitGRProcessing() {

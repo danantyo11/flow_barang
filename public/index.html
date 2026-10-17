@@ -198,6 +198,11 @@
       </div>
 
       <div class="win-nav-section-title">Modul Gudang (Level 2)</div>
+      <div class="win-nav-item" onclick="switchView('gudang-dashboard')">
+        <span class="win-nav-icon">🏭</span>
+        <span>Dashboard Gudang</span>
+        <span id="badgeGudangTotalTasks" class="win-nav-badge alert">0</span>
+      </div>
       <div class="win-nav-item" onclick="switchView('gudang-verify')">
         <span class="win-nav-icon">📦</span>
         <span>Cek Ketersediaan Stok</span>
@@ -530,6 +535,156 @@
               </thead>
               <tbody id="myPRTableBody">
                 <!-- Dynamically filled -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ===================================================================
+             VIEW GUDANG: DASHBOARD OPERASIONAL GUDANG (CLONED TEMPLATE FROM e:\gudang)
+             =================================================================== -->
+        <div id="view-gudang-dashboard" class="win-view-page" style="display:none;">
+          <!-- Warehouse Hero Banner -->
+          <div class="wh-hero-card">
+            <div class="wh-hero-left">
+              <div class="wh-hero-icon">🏭</div>
+              <div>
+                <div class="wh-hero-title">Pusat Operasional Logistik & Pergudangan</div>
+                <div class="wh-hero-subtitle">
+                  Sistem monitoring stok fisik rak, verifikasi form PR masuk, dan penerimaan Delivery Order (DO) vendor.
+                </div>
+                <div class="wh-hero-tags">
+                  <span class="wh-pill wh-pill-online">● Staf Aktif: <strong id="whHeroStaffName">Joko Susilo (Level 2)</strong></span>
+                  <span class="wh-pill wh-pill-mode">Rak & QC Station Ready</span>
+                  <span class="wh-pill" style="background:rgba(255,255,255,0.1); color:#e2e8f0; border:1px solid rgba(255,255,255,0.15);">Two-Phase Flow Active</span>
+                </div>
+              </div>
+            </div>
+            <div class="wh-hero-right">
+              <div class="wh-hero-clock" id="whLiveClock">--:--:-- WIB</div>
+              <div style="display:flex; gap:6px;">
+                <button class="win-btn win-btn-sm" style="background:rgba(255,255,255,0.15); color:white; border-color:rgba(255,255,255,0.25);" onclick="refreshCurrentView()">
+                  🔄 Refresh Data
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4 Quick Action Cards (ala e:\gudang) -->
+          <div class="wh-action-grid">
+            <div class="wh-action-card card-blue" onclick="switchView('gudang-receipt')">
+              <div class="wh-action-header">
+                <div class="wh-action-icon-box">🚚</div>
+                <span class="wh-action-badge" id="whCardDOBadge">0 Menunggu</span>
+              </div>
+              <div class="wh-action-title">Penerimaan Barang Masuk (DO)</div>
+              <div class="wh-action-desc">Catat surat jalan vendor, periksa kesesuaian fisik QC, dan simpan ke lokasi rak simpan.</div>
+              <div class="wh-action-footer">
+                <span>Buka Tiket DO &rarr;</span>
+                <span style="font-size:11px;">Fase 3 Receiving</span>
+              </div>
+            </div>
+
+            <div class="wh-action-card card-amber" onclick="switchView('gudang-verify')">
+              <div class="wh-action-header">
+                <div class="wh-action-icon-box">📦</div>
+                <span class="wh-action-badge" id="whCardPRBadge">0 Antrean</span>
+              </div>
+              <div class="wh-action-title">Cek Ketersediaan Stok (PR)</div>
+              <div class="wh-action-desc">Periksa kuantitas fisik rak barang dari form permintaan pemohon sebelum dieskalasikan.</div>
+              <div class="wh-action-footer">
+                <span>Cek Antrean PR &rarr;</span>
+                <span style="font-size:11px;">Fase 1 Verifikasi</span>
+              </div>
+            </div>
+
+            <div class="wh-action-card card-emerald" onclick="filterGudangTasks('FULFILLED')">
+              <div class="wh-action-header">
+                <div class="wh-action-icon-box">✅</div>
+                <span class="wh-action-badge" id="whCardFulfilledBadge">0 Terpenuhi</span>
+              </div>
+              <div class="wh-action-title">Terpenuhi dari Stok Gudang</div>
+              <div class="wh-action-desc">Permohonan yang telah selesai dipenuhi langsung dari ketersediaan rak tanpa pengadaan luar.</div>
+              <div class="wh-action-footer">
+                <span>Lihat Data Stok &rarr;</span>
+                <span style="font-size:11px;">Stok Internal</span>
+              </div>
+            </div>
+
+            <div class="wh-action-card card-purple" onclick="filterGudangTasks('COMPLETED')">
+              <div class="wh-action-header">
+                <div class="wh-action-icon-box">📑</div>
+                <span class="wh-action-badge" id="whCardCompletedBadge">0 Tuntas</span>
+              </div>
+              <div class="wh-action-title">Siklus Selesai (Completed)</div>
+              <div class="wh-action-desc">Arsip penerimaan dan pengadaan yang telah selesai tuntas dan tersimpan di sistem.</div>
+              <div class="wh-action-footer">
+                <span>Lihat Riwayat &rarr;</span>
+                <span style="font-size:11px;">Dokumen Arsip</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4 KPI Metrics -->
+          <div class="wh-kpi-grid">
+            <div class="wh-kpi-card">
+              <div class="wh-kpi-icon" style="background:#fef3c7; color:#b45309;">⏳</div>
+              <div class="wh-kpi-info">
+                <div class="wh-kpi-num" id="whKpiPRQueue">0</div>
+                <div class="wh-kpi-txt">Antrean Verifikasi PR</div>
+              </div>
+            </div>
+            <div class="wh-kpi-card">
+              <div class="wh-kpi-icon" style="background:#e0f2fe; color:#0284c7;">🚚</div>
+              <div class="wh-kpi-info">
+                <div class="wh-kpi-num" id="whKpiGRQueue">0</div>
+                <div class="wh-kpi-txt">Antrean Surat Jalan DO</div>
+              </div>
+            </div>
+            <div class="wh-kpi-card">
+              <div class="wh-kpi-icon" style="background:#dcfce7; color:#15803d;">📦</div>
+              <div class="wh-kpi-info">
+                <div class="wh-kpi-num" id="whKpiFulfilled">0</div>
+                <div class="wh-kpi-txt">PR Dipenuhi Stok Rak</div>
+              </div>
+            </div>
+            <div class="wh-kpi-card">
+              <div class="wh-kpi-icon" style="background:#ede9fe; color:#7c3aed;">🏁</div>
+              <div class="wh-kpi-info">
+                <div class="wh-kpi-num" id="whKpiCompleted">0</div>
+                <div class="wh-kpi-txt">Pengadaan Selesai (QC OK)</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Combined Priority Warehouse Tasks Table -->
+          <div class="win-table-wrap">
+            <div class="win-table-header" style="flex-wrap:wrap; gap:8px;">
+              <div>
+                <span class="win-table-title">⚡ Prioritas Tugas Operasional Gudang Hari Ini</span>
+                <span id="whTaskCountBadge" class="badge badge-gudang" style="margin-left:8px;">0 Tugas</span>
+              </div>
+              <div style="display:flex; gap:6px;">
+                <button type="button" class="win-btn win-btn-sm" id="btnFilterAllTasks" onclick="filterGudangTasks('ALL')">Semua Tugas</button>
+                <button type="button" class="win-btn win-btn-sm" id="btnFilterPRTasks" onclick="filterGudangTasks('PR')">📦 Cek Stok PR</button>
+                <button type="button" class="win-btn win-btn-sm" id="btnFilterDOTasks" onclick="filterGudangTasks('DO')">🚚 Penerimaan DO</button>
+                <button type="button" class="win-btn win-btn-sm" id="btnFilterDoneTasks" onclick="filterGudangTasks('DONE')">✅ Terpenuhi / Selesai</button>
+              </div>
+            </div>
+            <table class="win-table">
+              <thead>
+                <tr>
+                  <th style="width:120px;">Tipe Tugas</th>
+                  <th>No. Dokumen / Ref</th>
+                  <th>Tanggal</th>
+                  <th>Pengirim / Pemohon</th>
+                  <th>Rincian Barang</th>
+                  <th>Status Alur</th>
+                  <th style="text-align:right;">Aksi Cepat</th>
+                </tr>
+              </thead>
+              <tbody id="whPriorityTasksTableBody">
+                <!-- Dynamically filled by renderGudangDashboard() -->
               </tbody>
             </table>
           </div>
@@ -888,15 +1043,21 @@
 
   <!-- Modal 2: Gudang Stock Verification Modal -->
   <div id="modalGudangVerify" class="win-modal-backdrop">
-    <div class="win-modal" style="max-width:760px;">
+    <div class="win-modal" style="max-width:780px;">
       <div class="win-modal-header">
         <span class="win-modal-title" id="gudangModalTitle">Pengecekan Fisik Stok Gudang</span>
         <button class="win-caption-btn close" onclick="closeModal('modalGudangVerify')">&#x2715;</button>
       </div>
       <div class="win-modal-body">
-        <p style="font-size:12px; color:#475569; margin-bottom:12px;">
-          Masukkan kuantitas fisik yang tersedia di rak penyimpanan gudang. Sistem akan mengalkulasikan sisa yang perlu dibeli (<code>qty_to_buy</code>).
-        </p>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+          <p style="font-size:12px; color:#475569; margin:0;">
+            Masukkan kuantitas fisik yang tersedia di rak gudang. Sistem mengalkulasikan sisa yang perlu dibeli (<code>qty_to_buy</code>).
+          </p>
+          <div style="display:flex; gap:6px;">
+            <button type="button" class="checker-quick-fill-btn" onclick="quickFillGudangStock('all')">⚡ Penuhi Semua dari Stok</button>
+            <button type="button" class="checker-quick-fill-btn" onclick="quickFillGudangStock('none')">🛒 Kosong (Beli Semua via PO)</button>
+          </div>
+        </div>
         <div id="gudangModalItemsContainer"></div>
       </div>
       <div class="win-modal-footer">

@@ -2,14 +2,24 @@ const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
+const jwt = require('jsonwebtoken');
 const { dbPath, initialData, seedDatabase } = require('./data/seed');
 
 const app = express();
 const PORT = process.env.PORT || 3300;
+const JWT_SECRET = process.env.JWT_SECRET || 'flowrequest-secret-key-2026';
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h';
 
 app.use(cors());
 app.use(express.json());
+app.use((err, req, res, next) => {
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    return res.status(400).json({ success: false, message: 'Format data JSON tidak valid.' });
+  }
+  next(err);
+});
 app.use(express.static(path.join(__dirname, 'public')));
+
 
 // Helper to read / write DB
 function getDB() {
@@ -29,9 +39,25 @@ function saveDB(data) {
 // Active user session simulation (null = not logged in / shows login page)
 let currentUserId = null;
 
-function getActiveUser(db) {
-  if (!currentUserId) return null;
-  const user = db.users.find(u => u.id === currentUserId);
+function getActiveUser(db, req = null) {
+  let targetId = null;
+
+  // 1. Ekstrak User ID dari JWT Token (Stateless Authentication)
+  if (req && req.user && req.user.id) {
+    targetId = req.user.id;
+  } else if (req && req.headers && req.headers.authorization) {
+    const authHeader = req.headers.authorization;
+    if (authHeader.startsWith('Bearer ')) {
+      const decoded = verifyToken(authHeader.substring(7));
+      if (decoded && decoded.id) targetId = decoded.id;
+    }
+  } else if (currentUserId) {
+    // 2. Fallback jika ada session legacy
+    targetId = currentUserId;
+  }
+
+  if (!targetId) return null;
+  const user = db.users.find(u => u.id === targetId);
   if (!user) return null;
   const role = db.roles.find(r => r.id === user.role_id) || {};
   const limit = db.approval_limits.find(l => l.level === user.role_level) || null;
@@ -44,6 +70,7 @@ function getActiveUser(db) {
     limit
   };
 }
+
 
 // Log audit helper
 function addAuditLog(db, { docType, docNumber, actor, action, prevStatus, newStatus, notes }) {
@@ -65,15 +92,128 @@ function addAuditLog(db, { docType, docNumber, actor, action, prevStatus, newSta
 }
 
 // ============================================================================
+// JWT TOKEN HELPERS & MIDDLEWARE
+// ============================================================================
+
+function generateToken(user) {
+  return jwt.sign(
+    {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      full_name: user.full_name,
+      role_id: user.role_id,
+      role_code: user.role_code,
+      role_level: user.role_level,
+      role_name: user.role_name,
+      department_id: user.department_id,
+      department_name: user.department_name,
+      can_approve_pr: !!user.can_approve_pr,
+      can_approve_po: !!user.can_approve_po
+    },
+    JWT_SECRET,
+    { expiresIn: JWT_EXPIRES_IN }
+  );
+}
+
+function verifyToken(token) {
+  try {
+    return jwt.verify(token, JWT_SECRET);
+  } catch (err) {
+    return null;
+  }
+}
+
+// Middleware: Authenticate via Bearer Token or Session
+function authenticateUser(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.substring(7);
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      return res.status(401).json({ success: false, message: 'Token JWT tidak valid atau telah kedaluwarsa.' });
+    }
+    req.user = decoded;
+    return next();
+  }
+
+  // Fallback to active desktop session
+  const db = getDB();
+  const sessionUser = getActiveUser(db);
+  if (sessionUser) {
+    req.user = sessionUser;
+    return next();
+  }
+
+  return res.status(401).json({ success: false, message: 'Autentikasi diperlukan. Silakan sertakan Bearer Token di header Authorization.' });
+}
+
+// ============================================================================
 // AUTH & CURRENT SESSION ROUTES
 // ============================================================================
 
+// GET /api/auth/current - Returns current session or decoded token user
 app.get('/api/auth/current', (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.substring(7);
+    const decoded = verifyToken(token);
+    if (decoded) {
+      const db = getDB();
+      const user = db.users.find(u => u.id === decoded.id);
+      if (user && user.is_active) {
+        const role = db.roles.find(r => r.id === user.role_id) || {};
+        const limit = db.approval_limits.find(l => l.level === user.role_level) || null;
+        return res.json({
+          success: true,
+          data: {
+            ...user,
+            role_name: role.role_name || user.role_name,
+            role_level: role.level !== undefined ? role.level : user.role_level,
+            can_approve_pr: !!role.can_approve_pr,
+            can_approve_po: !!role.can_approve_po,
+            limit
+          }
+        });
+      }
+    }
+  }
+
   const db = getDB();
   const user = getActiveUser(db);
   res.json({ success: true, data: user });
 });
 
+// GET /api/auth/me - Direct JWT token profile inspection
+app.get('/api/auth/me', authenticateUser, (req, res) => {
+  res.json({
+    success: true,
+    message: 'User profile retrieved successfully.',
+    data: req.user
+  });
+});
+
+// POST /api/auth/verify - Validate token from body or header
+app.post('/api/auth/verify', (req, res) => {
+  const token = req.body.token || (req.headers.authorization && req.headers.authorization.startsWith('Bearer ') ? req.headers.authorization.substring(7) : null);
+  if (!token) {
+    return res.status(400).json({ success: false, message: 'Token JWT wajib disertakan.' });
+  }
+
+  const decoded = verifyToken(token);
+  if (!decoded) {
+    return res.status(401).json({ success: false, valid: false, message: 'Token tidak valid atau kedaluwarsa.' });
+  }
+
+  return res.json({
+    success: true,
+    valid: true,
+    message: 'Token JWT valid.',
+    data: decoded
+  });
+});
+
+// POST /api/auth/login - Main Login Endpoint with JWT Token Generation
 app.post('/api/auth/login', (req, res) => {
   const { username, password } = req.body;
   const db = getDB();
@@ -93,13 +233,26 @@ app.post('/api/auth/login', (req, res) => {
     return res.status(403).json({ success: false, message: 'Akun ini telah dinonaktifkan oleh administrator.' });
   }
 
-  // Demo password validation: accepts 'password123', 'admin123', the username, or non-empty in demo mode
+  // Password validation: accepts 'password123', 'admin123', username, or matching custom password
   if (password && password !== 'password123' && password !== 'admin123' && password !== user.username) {
     return res.status(401).json({ success: false, message: 'Password salah. Gunakan password "password123" atau username Anda.' });
   }
 
-  currentUserId = user.id;
-  const activeUser = getActiveUser(db);
+  // Stateless Authentication: Server TIDAK LAGI mengisi currentUserId, melainkan menerbitkan Token JWT
+  const role = db.roles.find(r => r.id === user.role_id) || {};
+  const limit = db.approval_limits.find(l => l.level === user.role_level) || null;
+  const activeUser = {
+    ...user,
+    role_name: role.role_name || user.role_name,
+    role_level: role.level !== undefined ? role.level : user.role_level,
+    can_approve_pr: !!role.can_approve_pr,
+    can_approve_po: !!role.can_approve_po,
+    limit
+  };
+
+  // Generate JWT Signed Token berbasis payload User
+  const token = generateToken(activeUser);
+
 
   addAuditLog(db, {
     docType: 'AUTH',
@@ -108,16 +261,20 @@ app.post('/api/auth/login', (req, res) => {
     action: 'USER_LOGIN',
     prevStatus: '-',
     newStatus: 'LOGGED_IN',
-    notes: `Pengguna ${activeUser.full_name} (${activeUser.role_name}) berhasil login ke sistem.`
+    notes: `Pengguna ${activeUser.full_name} (${activeUser.role_name}) berhasil login ke sistem dengan JWT Token.`
   });
   saveDB(db);
 
   res.json({
     success: true,
     message: `Selamat datang kembali, ${activeUser.full_name}!`,
+    token,
+    token_type: 'Bearer',
+    expires_in: JWT_EXPIRES_IN,
     data: activeUser
   });
 });
+
 
 app.post('/api/auth/logout', (req, res) => {
   const db = getDB();
