@@ -10,7 +10,21 @@ const PORT = process.env.PORT || 3300;
 const JWT_SECRET = process.env.JWT_SECRET || 'flowrequest-secret-key-2026';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h';
 
+// Konfigurasi Profil Resmi Perusahaan
+const COMPANY_CONFIG = {
+  name: 'PT. Golden Alura Refineri (GAR)',
+  brand: 'GAR',
+  address: 'Kawasan Industri SIER, Jl. Rungkut Industri IV No.10, Kutisari, Kec. Tenggilis Mejoyo, Surabaya, Jawa Timur 60291',
+  city: 'Surabaya',
+  province: 'Jawa Timur',
+  postal_code: '60291',
+  phone: '(031) 8438811',
+  email: 'procurement@golden-alura.co.id',
+  industry: 'Palm Oil & Edible Oil Refinery'
+};
+
 app.use(cors());
+
 app.use(express.json());
 app.use((err, req, res, next) => {
   if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
@@ -152,8 +166,17 @@ function authenticateUser(req, res, next) {
 // AUTH & CURRENT SESSION ROUTES
 // ============================================================================
 
+// GET /api/company - Profile Informasi Perusahaan Resmi
+app.get('/api/company', (req, res) => {
+  res.json({
+    success: true,
+    data: COMPANY_CONFIG
+  });
+});
+
 // GET /api/auth/current - Returns current session or decoded token user
 app.get('/api/auth/current', (req, res) => {
+
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith('Bearer ')) {
     const token = authHeader.substring(7);
@@ -311,7 +334,7 @@ app.post('/api/auth/switch-role', (req, res) => {
   }
 
   currentUserId = targetUser.id;
-  const activeUser = getActiveUser(db);
+  const activeUser = getActiveUser(db, req);
   res.json({ success: true, message: `Berhasil beralih peran ke: ${activeUser.full_name} (${activeUser.role_name})`, data: activeUser });
 });
 
@@ -321,7 +344,7 @@ app.post('/api/auth/switch-role', (req, res) => {
 
 app.get('/api/stats', (req, res) => {
   const db = getDB();
-  const activeUser = getActiveUser(db);
+  const activeUser = getActiveUser(db, req);
 
   const totalPR = db.requests.length;
   const inWarehouse = db.requests.filter(r => r.status === 'SUBMITTED_TO_GUDANG').length;
@@ -358,7 +381,7 @@ app.get('/api/stats', (req, res) => {
 app.get('/api/requests', (req, res) => {
   const db = getDB();
   const { status, view } = req.query;
-  const activeUser = getActiveUser(db);
+  const activeUser = getActiveUser(db, req);
 
   let list = [...db.requests];
 
@@ -402,8 +425,12 @@ app.get('/api/requests/:id', (req, res) => {
 
 app.post('/api/requests', (req, res) => {
   const db = getDB();
-  const activeUser = getActiveUser(db);
+  const activeUser = getActiveUser(db, req);
+  if (!activeUser) {
+    return res.status(401).json({ success: false, message: 'Autentikasi diperlukan. Silakan login terlebih dahulu.' });
+  }
   const { purpose, required_date, urgency, items } = req.body;
+
 
   if (!items || !items.length) {
     return res.status(400).json({ success: false, message: 'Daftar barang permohonan tidak boleh kosong.' });
@@ -473,8 +500,12 @@ app.post('/api/requests', (req, res) => {
 app.post('/api/requests/:id/verify-stock', (req, res) => {
   const db = getDB();
   const id = Number(req.params.id);
-  const activeUser = getActiveUser(db);
+  const activeUser = getActiveUser(db, req);
+  if (!activeUser) {
+    return res.status(401).json({ success: false, message: 'Autentikasi diperlukan. Silakan login terlebih dahulu.' });
+  }
   const { verifications } = req.body; // array of { itemId, warehouseStockQty, qtyToBuy, warehouseNotes }
+
 
   const pr = db.requests.find(r => r.id === id);
   if (!pr) return res.status(404).json({ success: false, message: 'Dokumen PR tidak ditemukan.' });
@@ -556,8 +587,12 @@ app.post('/api/requests/:id/verify-stock', (req, res) => {
 app.post('/api/requests/:id/approve', (req, res) => {
   const db = getDB();
   const id = Number(req.params.id);
-  const activeUser = getActiveUser(db);
+  const activeUser = getActiveUser(db, req);
+  if (!activeUser) {
+    return res.status(401).json({ success: false, message: 'Autentikasi diperlukan. Silakan login terlebih dahulu.' });
+  }
   const { notes } = req.body;
+
 
   const pr = db.requests.find(r => r.id === id);
   if (!pr) return res.status(404).json({ success: false, message: 'Dokumen PR tidak ditemukan.' });
@@ -637,8 +672,12 @@ app.post('/api/requests/:id/approve', (req, res) => {
 app.post('/api/requests/:id/reject', (req, res) => {
   const db = getDB();
   const id = Number(req.params.id);
-  const activeUser = getActiveUser(db);
+  const activeUser = getActiveUser(db, req);
+  if (!activeUser) {
+    return res.status(401).json({ success: false, message: 'Autentikasi diperlukan. Silakan login terlebih dahulu.' });
+  }
   const { reason } = req.body;
+
 
   const pr = db.requests.find(r => r.id === id);
   if (!pr) return res.status(404).json({ success: false, message: 'Dokumen PR tidak ditemukan.' });
@@ -678,8 +717,12 @@ app.get('/api/purchase-orders', (req, res) => {
 
 app.post('/api/purchase-orders', (req, res) => {
   const db = getDB();
-  const activeUser = getActiveUser(db);
+  const activeUser = getActiveUser(db, req);
+  if (!activeUser) {
+    return res.status(401).json({ success: false, message: 'Autentikasi diperlukan. Silakan login terlebih dahulu.' });
+  }
   const { request_id, vendor_id, delivery_date, payment_terms, tax_rate, items } = req.body;
+
 
   // Validasi: Harus peran Purchasing (Level 9) atau SYST000
   if (activeUser.role_code !== 'PURCHASING' && activeUser.role_level !== 0) {
@@ -767,8 +810,12 @@ app.post('/api/purchase-orders', (req, res) => {
 app.post('/api/purchase-orders/:id/approve', (req, res) => {
   const db = getDB();
   const id = Number(req.params.id);
-  const activeUser = getActiveUser(db);
+  const activeUser = getActiveUser(db, req);
+  if (!activeUser) {
+    return res.status(401).json({ success: false, message: 'Autentikasi diperlukan. Silakan login terlebih dahulu.' });
+  }
   const { notes } = req.body;
+
 
   const po = db.purchase_orders.find(p => p.id === id);
   if (!po) return res.status(404).json({ success: false, message: 'Dokumen PO tidak ditemukan.' });
@@ -812,8 +859,12 @@ app.post('/api/purchase-orders/:id/approve', (req, res) => {
 app.post('/api/purchase-orders/:id/reject', (req, res) => {
   const db = getDB();
   const id = Number(req.params.id);
-  const activeUser = getActiveUser(db);
+  const activeUser = getActiveUser(db, req);
+  if (!activeUser) {
+    return res.status(401).json({ success: false, message: 'Autentikasi diperlukan. Silakan login terlebih dahulu.' });
+  }
   const { reason } = req.body;
+
 
   const po = db.purchase_orders.find(p => p.id === id);
   if (!po) return res.status(404).json({ success: false, message: 'Dokumen PO tidak ditemukan.' });
@@ -843,9 +894,13 @@ app.post('/api/purchase-orders/:id/reject', (req, res) => {
 app.post('/api/purchase-orders/:id/release', (req, res) => {
   const db = getDB();
   const id = Number(req.params.id);
-  const activeUser = getActiveUser(db);
+  const activeUser = getActiveUser(db, req);
+  if (!activeUser) {
+    return res.status(401).json({ success: false, message: 'Autentikasi diperlukan. Silakan login terlebih dahulu.' });
+  }
 
   if (activeUser.role_code !== 'PURCHASING' && activeUser.role_level !== 0) {
+
     return res.status(403).json({ success: false, message: 'Hanya peran Purchasing yang berwenang merilis PO ke Vendor.' });
   }
 
@@ -928,8 +983,12 @@ app.get('/api/goods-receipts', (req, res) => {
 app.post('/api/goods-receipts/:id/receive', (req, res) => {
   const db = getDB();
   const id = Number(req.params.id);
-  const activeUser = getActiveUser(db);
+  const activeUser = getActiveUser(db, req);
+  if (!activeUser) {
+    return res.status(401).json({ success: false, message: 'Autentikasi diperlukan. Silakan login terlebih dahulu.' });
+  }
   const { vendor_delivery_note_number, receiving_notes, items } = req.body;
+
 
   if (activeUser.role_code !== 'GUDANG' && activeUser.role_level !== 0) {
     return res.status(403).json({ success: false, message: 'Hanya petugas Gudang yang berwenang memvalidasi penerimaan fisik barang.' });
@@ -1010,8 +1069,12 @@ app.get('/api/approval-limits', (req, res) => {
 app.put('/api/approval-limits/:id', (req, res) => {
   const db = getDB();
   const id = Number(req.params.id);
-  const activeUser = getActiveUser(db);
+  const activeUser = getActiveUser(db, req);
+  if (!activeUser) {
+    return res.status(401).json({ success: false, message: 'Autentikasi diperlukan. Silakan login terlebih dahulu.' });
+  }
   const { min_amount, max_amount } = req.body;
+
 
   if (activeUser.role_code !== 'SYST000' && activeUser.role_level !== 0) {
     return res.status(403).json({ success: false, message: 'Akses Ditolak: Hanya Admin SYST000 yang dapat mengubah threshold approval.' });
@@ -1053,8 +1116,12 @@ app.get('/api/users', (req, res) => {
 
 app.post('/api/users', (req, res) => {
   const db = getDB();
-  const activeUser = getActiveUser(db);
+  const activeUser = getActiveUser(db, req);
+  if (!activeUser) {
+    return res.status(401).json({ success: false, message: 'Autentikasi diperlukan. Silakan login terlebih dahulu.' });
+  }
   const { username, full_name, email, role_id, department_id } = req.body;
+
 
   if (activeUser.role_code !== 'SYST000' && activeUser.role_level !== 0) {
     return res.status(403).json({ success: false, message: 'Hanya Admin SYST000 yang berwenang menambah user.' });
@@ -1101,9 +1168,13 @@ app.post('/api/users', (req, res) => {
 app.put('/api/users/:id/toggle-status', (req, res) => {
   const db = getDB();
   const id = Number(req.params.id);
-  const activeUser = getActiveUser(db);
+  const activeUser = getActiveUser(db, req);
+  if (!activeUser) {
+    return res.status(401).json({ success: false, message: 'Autentikasi diperlukan. Silakan login terlebih dahulu.' });
+  }
 
   if (activeUser.role_code !== 'SYST000' && activeUser.role_level !== 0) {
+
     return res.status(403).json({ success: false, message: 'Hanya Admin SYST000 yang berwenang mengubah status user.' });
   }
 

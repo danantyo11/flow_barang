@@ -1,7 +1,10 @@
 # Arsitektur Sistem Permohonan Barang (Goods Request System)
-**Berbasis Role-Based Access Control (RBAC) & Dynamic Threshold Routing**
+**PT. Golden Alura Refineri (GAR)**  
+*Kawasan Industri SIER, Jl. Rungkut Industri IV No.10, Kutisari, Kec. Tenggilis Mejoyo, Surabaya, Jawa Timur 60291*  
+Berbasis Role-Based Access Control (RBAC), Dynamic Threshold Routing & Stateless JWT Authentication.
 
 ---
+
 
 ## 1. Hierarki Peran Pengguna (User Roles & Hierarchy)
 

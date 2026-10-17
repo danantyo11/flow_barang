@@ -571,6 +571,39 @@
           "warehouse_notes": ""
         }
       ]
+    },
+    {
+      "id": 6,
+      "pr_number": "PR-202610-006",
+      "requestor_id": 2,
+      "requestor_name": "Ahmad Nurul",
+      "department_id": 1,
+      "department_name": "Teknologi Informasi",
+      "request_date": "2026-10-17",
+      "required_date": "2026-10-25",
+      "purpose": "Pengadaan Valve & Pipa Refinery SIER Unit 2",
+      "urgency": "HIGH",
+      "status": "SUBMITTED_TO_GUDANG",
+      "total_estimated_amount": 6250000,
+      "total_need_purchase_amount": 6250000,
+      "current_approval_level": null,
+      "final_approver_id": null,
+      "final_approver_name": null,
+      "approved_at": null,
+      "items": [
+        {
+          "id": 1,
+          "item_name": "Industrial Flange Valve 4 Inch",
+          "specification": "Stainless Steel 316 ANSI 150",
+          "qty_requested": 5,
+          "unit": "Unit",
+          "estimated_unit_price": 1250000,
+          "total_estimated_price": 6250000,
+          "warehouse_stock_qty": 0,
+          "qty_to_buy": 5,
+          "warehouse_notes": ""
+        }
+      ]
     }
   ],
   "purchase_orders": [
@@ -730,6 +763,30 @@
     }
   ],
   "approval_logs": [
+    {
+      "id": 53,
+      "timestamp": "2026-10-17T05:46:30.555Z",
+      "document_type": "PR",
+      "document_number": "PR-202610-006",
+      "actor_name": "Ahmad Nurul",
+      "actor_role": "Petugas (Requestor) (L1)",
+      "action": "SUBMIT_PR",
+      "previous_status": "DRAFT",
+      "new_status": "SUBMITTED_TO_GUDANG",
+      "notes": "Permohonan baru diajukan oleh Ahmad Nurul. Nilai estimasi: Rp 6.250.000"
+    },
+    {
+      "id": 52,
+      "timestamp": "2026-10-17T05:46:30.523Z",
+      "document_type": "AUTH",
+      "document_number": "AUTH-2",
+      "actor_name": "Ahmad Nurul",
+      "actor_role": "Petugas (Requestor) (L1)",
+      "action": "USER_LOGIN",
+      "previous_status": "-",
+      "new_status": "LOGGED_IN",
+      "notes": "Pengguna Ahmad Nurul (Petugas (Requestor)) berhasil login ke sistem dengan JWT Token."
+    },
     {
       "id": 51,
       "timestamp": "2026-10-17T05:26:07.989Z",

@@ -1,8 +1,12 @@
-# FlowRequest Pro - Aplikasi Permohonan & Otorisasi Barang (Windows Desktop Edition)
+# PT. Golden Alura Refineri (GAR) - Goods Request System
 
-Aplikasi Permohonan Barang (*Goods Request System*) berbasis **Role-Based Access Control (RBAC)**, **Dynamic Threshold Routing**, dan antarmuka desktop **Windows 11 Fluent UI**.
+Aplikasi Permohonan Barang (*Goods Request System*) resmi untuk **PT. Golden Alura Refineri (GAR)** yang berlokasi di:
+> **Kawasan Industri SIER, Jl. Rungkut Industri IV No.10, Kutisari, Kec. Tenggilis Mejoyo, Surabaya, Jawa Timur 60291**
+
+Sistem ini mengintegrasikan **Role-Based Access Control (RBAC)**, **Dynamic Threshold Routing**, otentikasi **Stateless JWT**, serta antarmuka desktop **Windows 11 Fluent UI**.
 
 ---
+
 
 ## 🚀 Cara Menjalankan Aplikasi di Windows
 

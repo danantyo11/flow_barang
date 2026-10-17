@@ -5,8 +5,18 @@
 
 const API_BASE = '';
 
+// Konfigurasi Resmi Perusahaan
+const COMPANY_CONFIG = {
+  name: 'PT. Golden Alura Refineri (GAR)',
+  brand: 'GAR',
+  address: 'Kawasan Industri SIER, Jl. Rungkut Industri IV No.10, Kutisari, Kec. Tenggilis Mejoyo, Surabaya, Jawa Timur 60291',
+  phone: '(031) 8438811',
+  email: 'procurement@golden-alura.co.id'
+};
+
 // Interceptor otomatis untuk melampirkan JWT Token ke seluruh request API
 const nativeFetch = window.fetch;
+
 window.fetch = function(url, options = {}) {
   const token = localStorage.getItem('flowrequest_jwt_token');
   if (token && typeof url === 'string' && (url.startsWith('/api') || url.includes('/api/'))) {
@@ -2178,9 +2188,10 @@ function showOfficialPrintModal(docId, type = 'PR') {
     container.innerHTML = `
       <div style="border-bottom: 2px solid #000; padding-bottom: 12px; margin-bottom: 16px; display:flex; justify-content:space-between; align-items:center;">
         <div>
-          <h2 style="font-size:18px; font-weight:800; text-transform:uppercase; margin:0;">PT FLOWREQUEST NUSANTARA PERSADA</h2>
-          <p style="font-size:11px; margin:2px 0 0; color:#444;">Gedung Cyber Tower Lt. 12, Jl. H.R. Rasuna Said Kav. 8, Jakarta Selatan &bull; Telp: (021) 5290-8800</p>
+          <h2 style="font-size:17px; font-weight:800; text-transform:uppercase; margin:0; color:#0f172a;">${COMPANY_CONFIG.name}</h2>
+          <p style="font-size:11px; margin:2px 0 0; color:#475569;">${COMPANY_CONFIG.address} &bull; Telp: ${COMPANY_CONFIG.phone}</p>
         </div>
+
         <div style="text-align:right;">
           <h3 style="font-size:14px; font-weight:700; color:#005a9e; margin:0;">MEMO PERMOHONAN PENGADAAN BARANG (PR)</h3>
           <span style="font-family:monospace; font-size:12px; font-weight:700;">${doc.pr_number}</span>
@@ -2260,9 +2271,10 @@ function showOfficialPrintModal(docId, type = 'PR') {
     container.innerHTML = `
       <div style="border-bottom: 2px solid #000; padding-bottom: 12px; margin-bottom: 16px; display:flex; justify-content:space-between; align-items:center;">
         <div>
-          <h2 style="font-size:18px; font-weight:800; text-transform:uppercase; margin:0;">PT FLOWREQUEST NUSANTARA PERSADA</h2>
-          <p style="font-size:11px; margin:2px 0 0; color:#444;">Gedung Cyber Tower Lt. 12, Jl. H.R. Rasuna Said Kav. 8, Jakarta Selatan &bull; Telp: (021) 5290-8800</p>
+          <h2 style="font-size:17px; font-weight:800; text-transform:uppercase; margin:0; color:#0f172a;">${COMPANY_CONFIG.name}</h2>
+          <p style="font-size:11px; margin:2px 0 0; color:#475569;">${COMPANY_CONFIG.address} &bull; Telp: ${COMPANY_CONFIG.phone}</p>
         </div>
+
         <div style="text-align:right;">
           <h3 style="font-size:15px; font-weight:700; color:#5c2d91; margin:0;">SURAT PESANAN RESMI (PURCHASE ORDER)</h3>
           <span style="font-family:monospace; font-size:12px; font-weight:700;">${doc.po_number}</span>

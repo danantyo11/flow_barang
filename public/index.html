@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FlowRequest Pro - Sistem Otorisasi & Permohonan Barang</title>
+  <title>PT. Golden Alura Refineri (GAR) - Sistem Permohonan Barang</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -13,9 +13,9 @@
        ========================================================================= -->
   <header class="win-titlebar">
     <div class="win-titlebar-left">
-      <div class="win-app-icon">FR</div>
-      <span class="win-app-title">FlowRequest Pro &mdash; Sistem Permohonan & Otorisasi Barang</span>
-      <span class="win-app-version-badge">Windows Desktop Edition</span>
+      <div class="win-app-icon" style="background:#0284c7; color:white; font-weight:800;">GAR</div>
+      <span class="win-app-title">PT. Golden Alura Refineri (GAR) &mdash; Sistem Permohonan & Otorisasi Barang</span>
+      <span class="win-app-version-badge">Kawasan Industri SIER</span>
     </div>
 
     <div class="win-titlebar-center">
@@ -44,10 +44,12 @@
   <div id="loginScreenWrapper" class="win-login-wrapper" style="display:flex;">
     <div class="win-login-card">
       <div class="win-login-header">
-        <div class="win-login-brand-icon">FR</div>
-        <h2 class="win-login-title">FlowRequest Pro</h2>
-        <p class="win-login-subtitle">Sistem Permohonan & Otorisasi Barang Terpadu</p>
+        <div class="win-login-brand-icon" style="background:linear-gradient(135deg, #0284c7, #0369a1); color:white; font-weight:800; font-size:20px;">GAR</div>
+        <h2 class="win-login-title" style="font-size:18px;">PT. Golden Alura Refineri</h2>
+        <p class="win-login-subtitle" style="font-weight:600; color:#0369a1;">Aplikasi Permohonan Barang (Goods Request System)</p>
+        <p style="font-size:11px; color:#64748b; margin:6px 0 0; line-height:1.4;">Kawasan Industri SIER, Jl. Rungkut Industri IV No.10, Kutisari, Kec. Tenggilis Mejoyo, Surabaya, Jawa Timur 60291</p>
       </div>
+
 
       <!-- Error Alert -->
       <div id="loginErrorBox" style="display:none; background:#fee2e2; border:1px solid #fca5a5; color:#991b1b; padding:8px 12px; border-radius:6px; font-size:11.5px; margin-bottom:14px;">
@@ -126,8 +128,9 @@
 
       <div class="win-login-footer-text">
         Dilindungi oleh Role-Based Access Control (RBAC) & Dynamic Threshold Policy.<br>
-        FlowRequest Pro &copy; 2026. All rights reserved.
+        PT. Golden Alura Refineri (GAR) &copy; 2026. All rights reserved.
       </div>
+
     </div>
   </div>
 
@@ -336,14 +339,15 @@
           </div>
 
           <!-- Quick Action Banner -->
-          <div class="win-card" style="margin-bottom: 16px; background: linear-gradient(135deg, #0078d4, #005a9e); color: white;">
+          <div class="win-card" style="margin-bottom: 16px; background: linear-gradient(135deg, #0284c7, #0369a1); color: white;">
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
               <div>
-                <h3 style="font-size:16px; font-weight:700; margin-bottom:4px;">Selamat Datang di FlowRequest Pro Windows Edition</h3>
+                <h3 style="font-size:16px; font-weight:700; margin-bottom:4px;">PT. Golden Alura Refineri (GAR) &mdash; Sistem Permohonan Barang</h3>
                 <p style="font-size:12px; color:rgba(255,255,255,0.9); max-width:680px;">
-                  Sistem pengadaan barang otomatis terintegrasi Two-Phase Workflow: Pengecekan Stok Gudang &rarr; Dynamic Threshold Approval Escalation (Level 3-8) &rarr; PO Enforcement (Level 6+) &rarr; Auto-Generated Goods Receiving QC Ticket.
+                  Sistem pengadaan & logistik refinery: Pengecekan Stok Gudang SIER &rarr; Dynamic Threshold Approval Escalation (Level 3-8) &rarr; PO Enforcement (Level 6+) &rarr; Penerimaan Fisik QC Gudang.
                 </p>
               </div>
+
               <div style="display:flex; gap:8px;">
                 <button class="win-btn" style="background:white; color:#005a9e; font-weight:700;" onclick="switchView('create-pr')">
                   + Buat Form PR Baru
