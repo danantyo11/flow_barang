@@ -37,13 +37,15 @@ CREATE TABLE IF NOT EXISTS roles (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 3. USERS
+-- 3. USERS (PT. Golden Alura Refineri)
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
-    username VARCHAR(50) NOT NULL UNIQUE,
+    username VARCHAR(50) NOT NULL UNIQUE,       -- User ID / NIK login
     email VARCHAR(100) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
-    full_name VARCHAR(150) NOT NULL,
+    full_name VARCHAR(150) NOT NULL,            -- 1. Nama Lengkap
+    jabatan VARCHAR(100) NOT NULL,              -- 2. Jabatan
+    penugasan VARCHAR(200) NOT NULL,            -- 3. Penugasan spesifik unit kerja
     role_id INT NOT NULL REFERENCES roles(id) ON UPDATE CASCADE,
     department_id INT REFERENCES departments(id) ON UPDATE CASCADE,
     is_active BOOLEAN DEFAULT TRUE,

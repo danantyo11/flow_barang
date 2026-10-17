@@ -1928,29 +1928,73 @@ function renderAdminUsersTable() {
   const tbody = document.getElementById('adminUsersTableBody');
   if (!tbody) return;
 
-  tbody.innerHTML = state.users.map(u => `
-    <tr>
-      <td>${u.id}</td>
-      <td><code>${u.username}</code></td>
-      <td><strong>${u.full_name}</strong></td>
-      <td>${u.email}</td>
-      <td><span class="badge badge-approval">${u.role_name} (Lvl ${u.role_level})</span></td>
-      <td>${u.department_name || '-'}</td>
-      <td>
-        ${u.is_active ? '<span class="badge badge-completed">Aktif</span>' : '<span class="badge badge-rejected">Non-aktif</span>'}
-      </td>
-      <td>
-        <button class="win-btn win-btn-sm" onclick="toggleUserStatusAction(${u.id})">
-          ${u.is_active ? 'Nonaktifkan' : 'Aktifkan'}
-        </button>
-      </td>
-    </tr>
-  `).join('');
+  const isCurrentSuperadmin = state.currentUser && (state.currentUser.role_code === 'SYST000' || state.currentUser.role_level === 0);
+
+  tbody.innerHTML = state.users.map(u => {
+    const isPrimaryAdmin = u.id === 1 || (u.role_code === 'SYST000' && u.id === 1);
+    const isSelf = state.currentUser && state.currentUser.id === u.id;
+
+    let deleteButtonHtml = '';
+    if (isCurrentSuperadmin) {
+      if (isPrimaryAdmin) {
+        deleteButtonHtml = `<button class="win-btn win-btn-sm" disabled title="Akun Superadmin Primer Dilindungi" style="opacity:0.5; cursor:not-allowed;">🔒 Protected</button>`;
+      } else if (isSelf) {
+        deleteButtonHtml = `<button class="win-btn win-btn-sm" disabled title="Tidak dapat menghapus akun Anda sendiri yang sedang aktif" style="opacity:0.5; cursor:not-allowed;">Akun Anda</button>`;
+      } else {
+        const safeUsername = (u.username || '').replace(/'/g, "\\'");
+        const safeName = (u.full_name || '').replace(/'/g, "\\'");
+        deleteButtonHtml = `<button class="win-btn win-btn-sm win-btn-danger" onclick="deleteUserAction(${u.id}, '${safeUsername}', '${safeName}')" title="Hapus User ID">🗑️ Hapus User ID</button>`;
+      }
+    }
+
+    return `
+      <tr>
+        <td>
+          <code style="font-weight:700; color:#0067c0; background:#f0f7ff; padding:2px 6px; border-radius:3px;">${u.username}</code>
+          <div style="font-size:10px; color:#94a3b8;">ID: #${u.id}</div>
+        </td>
+        <td>
+          <div style="font-weight:700; color:#0f172a;">${u.full_name}</div>
+          <div style="font-size:11px; color:#64748b;">${u.email || '-'}</div>
+        </td>
+        <td>
+          <div style="font-weight:600; color:#1e293b;">${u.jabatan || u.role_name}</div>
+        </td>
+        <td>
+          <div style="font-size:12px; color:#334155; max-width:240px;">${u.penugasan || '-'}</div>
+        </td>
+        <td>
+          <span style="font-size:12px; color:#475569;">${u.department_name || '-'}</span>
+        </td>
+        <td>
+          <span class="badge badge-approval">${u.role_name} (Lvl ${u.role_level})</span>
+        </td>
+        <td>
+          ${u.is_active ? '<span class="badge badge-completed">Aktif</span>' : '<span class="badge badge-rejected">Non-aktif</span>'}
+        </td>
+        <td style="text-align:right;">
+          <div style="display:inline-flex; gap:6px; justify-content:flex-end;">
+            <button class="win-btn win-btn-sm" onclick="toggleUserStatusAction(${u.id})">
+              ${u.is_active ? 'Nonaktifkan' : 'Aktifkan'}
+            </button>
+            ${deleteButtonHtml}
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
 }
 
 function showAddUserModal() {
   const roleSel = document.getElementById('newUserRoleId');
   const deptSel = document.getElementById('newUserDeptId');
+
+  // Reset isian form
+  document.getElementById('newUserUsername').value = '';
+  document.getElementById('newUserFullName').value = '';
+  document.getElementById('newUserJabatan').value = '';
+  document.getElementById('newUserPenugasan').value = '';
+  document.getElementById('newUserEmail').value = '';
 
   roleSel.innerHTML = state.roles.map(r => `<option value="${r.id}">${r.role_name} (Level ${r.level})</option>`).join('');
   deptSel.innerHTML = state.departments.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
@@ -1961,12 +2005,26 @@ function showAddUserModal() {
 async function submitNewUser() {
   const username = document.getElementById('newUserUsername').value.trim();
   const fullName = document.getElementById('newUserFullName').value.trim();
+  const jabatan = document.getElementById('newUserJabatan').value.trim();
+  const penugasan = document.getElementById('newUserPenugasan').value.trim();
   const email = document.getElementById('newUserEmail').value.trim();
   const roleId = document.getElementById('newUserRoleId').value;
   const deptId = document.getElementById('newUserDeptId').value;
 
-  if (!username || !fullName) {
-    showToast('Validasi Gagal', 'Username dan Nama Lengkap wajib diisi.', 'warning');
+  if (!username) {
+    showToast('Validasi Gagal', 'User ID (Username) wajib diisi.', 'warning');
+    return;
+  }
+  if (!fullName) {
+    showToast('Validasi Gagal', '1. Nama Lengkap wajib diisi.', 'warning');
+    return;
+  }
+  if (!jabatan) {
+    showToast('Validasi Gagal', '2. Jabatan wajib diisi.', 'warning');
+    return;
+  }
+  if (!penugasan) {
+    showToast('Validasi Gagal', '3. Penugasan wajib diisi.', 'warning');
     return;
   }
 
@@ -1974,11 +2032,19 @@ async function submitNewUser() {
     const res = await fetch(`${API_BASE}/api/users`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, full_name: fullName, email, role_id: roleId, department_id: deptId })
+      body: JSON.stringify({
+        username,
+        full_name: fullName,
+        jabatan,
+        penugasan,
+        email,
+        role_id: roleId,
+        department_id: deptId
+      })
     });
     const json = await res.json();
     if (json.success) {
-      showToast('User Ditambahkan', json.message, 'success');
+      showToast('User ID Ditambahkan', json.message, 'success');
       closeModal('modalAddUser');
       await refreshAllData();
       renderCurrentView();
@@ -1987,6 +2053,33 @@ async function submitNewUser() {
     }
   } catch (err) {
     showToast('Error', 'Gagal mendaftarkan user baru.', 'danger');
+  }
+}
+
+async function deleteUserAction(userId, username, fullName) {
+  const confirmed = confirm(
+    `⚠️ PERINGATAN HAPUS USER ID (SYST000)\n\n` +
+    `Apakah Anda yakin ingin menghapus User ID berikut secara permanen?\n\n` +
+    `• User ID: ${username}\n` +
+    `• Nama Lengkap: ${fullName}\n\n` +
+    `Aksi ini tidak dapat dibatalkan dan akan dicatat secara immutable ke Audit Trail PT. Golden Alura Refineri.`
+  );
+  if (!confirmed) return;
+
+  try {
+    const res = await fetch(`${API_BASE}/api/users/${userId}`, {
+      method: 'DELETE'
+    });
+    const json = await res.json();
+    if (json.success) {
+      showToast('User ID Dihapus', json.message, 'success');
+      await refreshAllData();
+      renderCurrentView();
+    } else {
+      showToast('Gagal Menghapus User ID', json.message, 'danger');
+    }
+  } catch (err) {
+    showToast('Error', 'Terjadi kesalahan saat memproses penghapusan User ID.', 'danger');
   }
 }
 

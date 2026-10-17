@@ -965,22 +965,34 @@
              VIEW 10: MANAJEMEN PENGGUNA (ADMIN SYST000)
              =================================================================== -->
         <div id="view-admin-users" class="win-view-page" style="display:none;">
+          <div class="win-card" style="margin-bottom:14px; background:#f8fafc; border-color:#e2e8f0;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+              <div>
+                <h3 style="font-size:13px; font-weight:700; color:#1e293b;">👥 Manajemen User ID & Penugasan PT. Golden Alura Refineri</h3>
+                <p style="font-size:12px; color:#64748b; margin-top:2px;">
+                  Pusat administrasi pengguna internal: input 3 identitas utama (1. Nama Lengkap, 2. Jabatan, 3. Penugasan), atur hierarki kewenangan approval, serta opsi <strong>Hapus User ID</strong> khusus peran Superadmin (SYST000).
+                </p>
+              </div>
+              <button class="win-btn win-btn-sm win-btn-primary" onclick="showAddUserModal()">+ Tambah User ID Baru</button>
+            </div>
+          </div>
+
           <div class="win-table-wrap">
             <div class="win-table-header">
-              <span class="win-table-title">Daftar Pengguna Sistem & Peran RBAC</span>
-              <button class="win-btn win-btn-sm win-btn-primary" onclick="showAddUserModal()">+ Tambah Pengguna Baru</button>
+              <span class="win-table-title">Daftar Pengguna Sistem PT. Golden Alura Refineri</span>
+              <span class="badge badge-purple">SYST000 Control Center</span>
             </div>
             <table class="win-table">
               <thead>
                 <tr>
-                  <th>ID</th>
-                  <th>Username</th>
-                  <th>Nama Lengkap</th>
-                  <th>Email</th>
-                  <th>Peran (Role)</th>
+                  <th>User ID</th>
+                  <th>1. Nama Lengkap</th>
+                  <th>2. Jabatan</th>
+                  <th>3. Penugasan</th>
                   <th>Departemen</th>
+                  <th>Hierarki Approval</th>
                   <th>Status Akun</th>
-                  <th>Aksi</th>
+                  <th style="text-align:right;">Opsi & Aksi User ID</th>
                 </tr>
               </thead>
               <tbody id="adminUsersTableBody">
@@ -1162,40 +1174,60 @@
 
   <!-- Modal 7: Tambah User (Admin SYST000) Modal -->
   <div id="modalAddUser" class="win-modal-backdrop">
-    <div class="win-modal" style="max-width:520px;">
+    <div class="win-modal" style="max-width:560px;">
       <div class="win-modal-header">
-        <span class="win-modal-title">Tambah Pengguna Baru (User)</span>
+        <span class="win-modal-title">Form Isian User ID Baru &bull; PT. Golden Alura Refineri</span>
         <button class="win-caption-btn close" onclick="closeModal('modalAddUser')">&#x2715;</button>
       </div>
       <div class="win-modal-body">
-        <div class="win-form-group">
-          <label class="win-label">Username *</label>
-          <input type="text" id="newUserUsername" class="win-input" placeholder="contoh: joko_finance">
+        <div style="background:#f1f5f9; border-left:4px solid #0067c0; padding:10px 14px; border-radius:4px; margin-bottom:14px; font-size:12px; color:#334155;">
+          <strong>Petunjuk Pendaftaran Akun (Superadmin SYST000):</strong><br>
+          Wajib mengisi <strong>User ID</strong> beserta 3 data pokok: <strong>1. Nama Lengkap</strong>, <strong>2. Jabatan</strong>, dan <strong>3. Penugasan</strong> unit kerja pabrik/kantor.
         </div>
+
         <div class="win-form-group">
-          <label class="win-label">Nama Lengkap *</label>
-          <input type="text" id="newUserFullName" class="win-input" placeholder="Nama lengkap & gelar">
+          <label class="win-label">User ID (Username / NIK Login) *</label>
+          <input type="text" id="newUserUsername" class="win-input" placeholder="contoh: gar_refinery01 / 20261001" autocomplete="off">
         </div>
+
         <div class="win-form-group">
-          <label class="win-label">Email</label>
-          <input type="email" id="newUserEmail" class="win-input" placeholder="email@perusahaan.co.id">
+          <label class="win-label"><strong>1. Nama Lengkap *</strong></label>
+          <input type="text" id="newUserFullName" class="win-input" placeholder="Nama lengkap beserta gelar (contoh: Ir. Heru Prasetyo, M.T.)">
         </div>
+
         <div class="win-form-group">
-          <label class="win-label">Peran (Role Hierarki) *</label>
-          <select id="newUserRoleId" class="win-select">
-            <!-- Filled dynamically -->
-          </select>
+          <label class="win-label"><strong>2. Jabatan *</strong></label>
+          <input type="text" id="newUserJabatan" class="win-input" placeholder="contoh: Supervisor QC Laboratorium / Staf Pemeliharaan Boiler">
         </div>
+
         <div class="win-form-group">
-          <label class="win-label">Departemen *</label>
-          <select id="newUserDeptId" class="win-select">
-            <!-- Filled dynamically -->
-          </select>
+          <label class="win-label"><strong>3. Penugasan *</strong></label>
+          <input type="text" id="newUserPenugasan" class="win-input" placeholder="contoh: Unit Fraksinasi & Pemurnian Pabrik SIER Surabaya">
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div class="win-form-group">
+            <label class="win-label">Peran (Role Hierarki Approval) *</label>
+            <select id="newUserRoleId" class="win-select">
+              <!-- Filled dynamically -->
+            </select>
+          </div>
+          <div class="win-form-group">
+            <label class="win-label">Departemen *</label>
+            <select id="newUserDeptId" class="win-select">
+              <!-- Filled dynamically -->
+            </select>
+          </div>
+        </div>
+
+        <div class="win-form-group">
+          <label class="win-label">Email Perusahaan</label>
+          <input type="email" id="newUserEmail" class="win-input" placeholder="nama@golden-alura.co.id">
         </div>
       </div>
       <div class="win-modal-footer">
         <button class="win-btn" onclick="closeModal('modalAddUser')">Batal</button>
-        <button class="win-btn win-btn-primary" onclick="submitNewUser()">Simpan Pengguna</button>
+        <button class="win-btn win-btn-primary" onclick="submitNewUser()">💾 Simpan User ID</button>
       </div>
     </div>
   </div>

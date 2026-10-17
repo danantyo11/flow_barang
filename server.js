@@ -1120,15 +1120,33 @@ app.post('/api/users', (req, res) => {
   if (!activeUser) {
     return res.status(401).json({ success: false, message: 'Autentikasi diperlukan. Silakan login terlebih dahulu.' });
   }
-  const { username, full_name, email, role_id, department_id } = req.body;
-
 
   if (activeUser.role_code !== 'SYST000' && activeUser.role_level !== 0) {
     return res.status(403).json({ success: false, message: 'Hanya Admin SYST000 yang berwenang menambah user.' });
   }
 
-  if (!username || !full_name || !role_id) {
-    return res.status(400).json({ success: false, message: 'Username, Nama Lengkap, dan Role wajib diisi.' });
+  const { username, full_name, jabatan, penugasan, email, role_id, department_id } = req.body;
+
+  if (!username || !username.trim()) {
+    return res.status(400).json({ success: false, message: 'User ID / Username wajib diisi.' });
+  }
+  if (!full_name || !full_name.trim()) {
+    return res.status(400).json({ success: false, message: '1. Nama Lengkap wajib diisi.' });
+  }
+  if (!jabatan || !jabatan.trim()) {
+    return res.status(400).json({ success: false, message: '2. Jabatan wajib diisi.' });
+  }
+  if (!penugasan || !penugasan.trim()) {
+    return res.status(400).json({ success: false, message: '3. Penugasan wajib diisi.' });
+  }
+  if (!role_id) {
+    return res.status(400).json({ success: false, message: 'Peran hierarki (Role) wajib dipilih.' });
+  }
+
+  const cleanUsername = username.toLowerCase().trim();
+  const existingUser = db.users.find(u => u.username.toLowerCase() === cleanUsername);
+  if (existingUser) {
+    return res.status(400).json({ success: false, message: `User ID '${cleanUsername}' sudah terdaftar dalam sistem.` });
   }
 
   const role = db.roles.find(r => r.id === Number(role_id)) || db.roles[1];
@@ -1137,9 +1155,11 @@ app.post('/api/users', (req, res) => {
   const nextId = (db.users.length ? Math.max(...db.users.map(u => u.id)) : 0) + 1;
   const newUser = {
     id: nextId,
-    username: username.toLowerCase().trim(),
-    email: email || `${username}@flowrequest.local`,
-    full_name,
+    username: cleanUsername,
+    email: email && email.trim() ? email.trim() : `${cleanUsername}@golden-alura.co.id`,
+    full_name: full_name.trim(),
+    jabatan: jabatan.trim(),
+    penugasan: penugasan.trim(),
     role_id: role.id,
     role_code: role.role_code,
     role_level: role.level,
@@ -1158,11 +1178,11 @@ app.post('/api/users', (req, res) => {
     action: 'CREATE_USER',
     prevStatus: '-',
     newStatus: 'ACTIVE',
-    notes: `User baru '${full_name}' didaftarkan sebagai ${role.role_name}.`
+    notes: `User ID '${cleanUsername}' baru didaftarkan. Nama: ${newUser.full_name}, Jabatan: ${newUser.jabatan}, Penugasan: ${newUser.penugasan}, Peran: ${role.role_name}.`
   });
 
   saveDB(db);
-  res.status(201).json({ success: true, message: `User ${full_name} berhasil ditambahkan.`, data: newUser });
+  res.status(201).json({ success: true, message: `User ID '${cleanUsername}' (${newUser.full_name}) berhasil didaftarkan.`, data: newUser });
 });
 
 app.put('/api/users/:id/toggle-status', (req, res) => {
@@ -1174,7 +1194,6 @@ app.put('/api/users/:id/toggle-status', (req, res) => {
   }
 
   if (activeUser.role_code !== 'SYST000' && activeUser.role_level !== 0) {
-
     return res.status(403).json({ success: false, message: 'Hanya Admin SYST000 yang berwenang mengubah status user.' });
   }
 
@@ -1194,11 +1213,63 @@ app.put('/api/users/:id/toggle-status', (req, res) => {
     action: user.is_active ? 'ACTIVATE_USER' : 'DEACTIVATE_USER',
     prevStatus: user.is_active ? 'INACTIVE' : 'ACTIVE',
     newStatus: user.is_active ? 'ACTIVE' : 'INACTIVE',
-    notes: `Status akun user ${user.full_name} diubah menjadi ${user.is_active ? 'Aktif' : 'Non-aktif'}.`
+    notes: `Status akun user ${user.full_name} (${user.username}) diubah menjadi ${user.is_active ? 'Aktif' : 'Non-aktif'}.`
   });
 
   saveDB(db);
   res.json({ success: true, message: `Status akun ${user.full_name} diubah menjadi ${user.is_active ? 'Aktif' : 'Non-aktif'}.`, data: user });
+});
+
+// DELETE /api/users/:id - Hapus User ID (Khusus Superadmin SYST000)
+app.delete('/api/users/:id', (req, res) => {
+  const db = getDB();
+  const id = Number(req.params.id);
+  const activeUser = getActiveUser(db, req);
+  if (!activeUser) {
+    return res.status(401).json({ success: false, message: 'Autentikasi diperlukan. Silakan login terlebih dahulu.' });
+  }
+
+  // Otorisasi ketat: Hanya user SYST000 yang dapat menghapus User ID
+  if (activeUser.role_code !== 'SYST000' && activeUser.role_level !== 0) {
+    return res.status(403).json({ success: false, message: 'Akses Ditolak: Hanya Superadmin (SYST000) yang berwenang menghapus User ID.' });
+  }
+
+  const targetIndex = db.users.findIndex(u => u.id === id);
+  if (targetIndex === -1) {
+    return res.status(404).json({ success: false, message: 'User ID tidak ditemukan dalam database.' });
+  }
+
+  const targetUser = db.users[targetIndex];
+
+  // Proteksi: Tidak boleh menghapus Superadmin Primer (id: 1)
+  if (targetUser.id === 1 || (targetUser.role_code === 'SYST000' && targetUser.id === 1)) {
+    return res.status(400).json({ success: false, message: 'Akun Superadmin primer (ID 1) dilindungi dan tidak dapat dihapus.' });
+  }
+
+  // Proteksi: Tidak boleh menghapus akun yang sedang aktif login saat ini
+  if (targetUser.id === activeUser.id) {
+    return res.status(400).json({ success: false, message: 'Tidak dapat menghapus User ID akun Anda sendiri yang sedang aktif digunakan.' });
+  }
+
+  // Hapus dari daftar user
+  db.users.splice(targetIndex, 1);
+
+  // Catat jejak audit immutable
+  addAuditLog(db, {
+    docType: 'USER',
+    docNumber: `USR-${targetUser.id}`,
+    actor: activeUser,
+    action: 'DELETE_USER',
+    prevStatus: targetUser.is_active ? 'ACTIVE' : 'INACTIVE',
+    newStatus: 'DELETED',
+    notes: `User ID '${targetUser.username}' (Nama: ${targetUser.full_name}, Jabatan: ${targetUser.jabatan || targetUser.role_name}, Penugasan: ${targetUser.penugasan || '-'}) telah dihapus secara permanen oleh ${activeUser.full_name} (SYST000).`
+  });
+
+  saveDB(db);
+  res.json({
+    success: true,
+    message: `User ID '${targetUser.username}' (${targetUser.full_name}) berhasil dihapus dari sistem PT. Golden Alura Refineri.`
+  });
 });
 
 // ============================================================================
