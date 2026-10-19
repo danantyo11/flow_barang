@@ -900,19 +900,48 @@ table.win-table tr:hover td {
 }
 
 /* --------------------------------------------------------------------------
-   Printable Official Documents (Print Dialog Preview)
+   Printable Official Documents (Print Dialog Preview - Format Kertas A4)
    -------------------------------------------------------------------------- */
+@page {
+  size: A4 portrait;
+  margin: 12mm 15mm;
+}
+
 @media print {
-  body {
-    background: white !important;
+  html, body {
+    background: #ffffff !important;
     height: auto !important;
     overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
-  .win-titlebar, .win-role-bar, .win-sidebar, .win-commandbar, .win-toast-container, .no-print {
+  .win-titlebar, .win-role-bar, .win-sidebar, .win-commandbar, .win-toast-container, .no-print,
+  .win-modal-header, .win-modal-footer, .win-modal-backdrop::before {
     display: none !important;
   }
+  .win-modal-backdrop {
+    position: static !important;
+    background: transparent !important;
+    display: block !important;
+    padding: 0 !important;
+  }
+  .win-modal {
+    box-shadow: none !important;
+    border: none !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  .win-modal-body {
+    padding: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
   .win-content {
-    background: white !important;
+    background: #ffffff !important;
     overflow: visible !important;
   }
   .win-view-scroll {
@@ -920,8 +949,10 @@ table.win-table tr:hover td {
   }
   .printable-document {
     display: block !important;
-    padding: 20mm;
-    color: black;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    color: #000000 !important;
   }
 }
 

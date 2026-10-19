@@ -784,6 +784,54 @@
   ],
   "approval_logs": [
     {
+      "id": 65,
+      "timestamp": "2026-10-19T07:09:57.350Z",
+      "document_type": "AUTH",
+      "document_number": "AUTH-3",
+      "actor_name": "Joko Susilo",
+      "actor_role": "Gudang (Stock Verifier & QC) (L2)",
+      "action": "USER_LOGIN",
+      "previous_status": "-",
+      "new_status": "LOGGED_IN",
+      "notes": "Pengguna Joko Susilo (Gudang (Stock Verifier & QC)) berhasil login ke sistem dengan JWT Token."
+    },
+    {
+      "id": 64,
+      "timestamp": "2026-10-18T07:20:14.515Z",
+      "document_type": "AUTH",
+      "document_number": "AUTH-1",
+      "actor_name": "System Administrator (SYST000)",
+      "actor_role": "Admin Sistem / Superadmin",
+      "action": "USER_LOGIN",
+      "previous_status": "-",
+      "new_status": "LOGGED_IN",
+      "notes": "Pengguna System Administrator (SYST000) (Admin Sistem / Superadmin) berhasil login ke sistem dengan JWT Token."
+    },
+    {
+      "id": 63,
+      "timestamp": "2026-10-18T06:14:38.113Z",
+      "document_type": "AUTH",
+      "document_number": "AUTH-3",
+      "actor_name": "Joko Susilo",
+      "actor_role": "Gudang (Stock Verifier & QC) (L2)",
+      "action": "USER_LOGIN",
+      "previous_status": "-",
+      "new_status": "LOGGED_IN",
+      "notes": "Pengguna Joko Susilo (Gudang (Stock Verifier & QC)) berhasil login ke sistem dengan JWT Token."
+    },
+    {
+      "id": 62,
+      "timestamp": "2026-10-17T06:05:25.783Z",
+      "document_type": "AUTH",
+      "document_number": "AUTH-10",
+      "actor_name": "Maya Sartika",
+      "actor_role": "Purchasing (Pengadaan) (L9)",
+      "action": "USER_LOGIN",
+      "previous_status": "-",
+      "new_status": "LOGGED_IN",
+      "notes": "Pengguna Maya Sartika (Purchasing (Pengadaan)) berhasil login ke sistem dengan JWT Token."
+    },
+    {
       "id": 61,
       "timestamp": "2026-10-17T06:02:24.581Z",
       "document_type": "USER",
